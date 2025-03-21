@@ -41,7 +41,7 @@ JDK_FULL="${JDK_FULL:-17-linux-x64}"
 
 if [ -z `which javac` ]; then
     apt-get -y update
-    apt-get install -y software-properties-common python-software-properties binutils java-common
+    apt-get install -y software-properties-common software-properties-common binutils java-common
 
     echo "===> Installing JDK..." 
 
@@ -184,11 +184,13 @@ if [ ! -e /mnt ]; then
 fi
 chmod a+rwx /mnt
 
-# Run ntpdate once to sync to ntp servers
-# use -u option to avoid port collision in case ntp daemon is already running
-ntpdate -u pool.ntp.org
-# Install ntp daemon - it will automatically start on boot
-apt-get -y install ntp
+# Install Chrony for time synchronization
+apt-get install -y chrony
+systemctl enable chrony
+systemctl start chrony
+# Force an immediate sync to pool.ntp.org 
+chronyc makestep
+
 
 # Increase the ulimit
 mkdir -p /etc/security/limits.d

@@ -29,7 +29,7 @@ num_zookeepers = 1
 num_brokers = 3
 num_workers = 0 # Generic workers that get the code, but don't start any services
 ram_megabytes = 1280
-base_box = "ubuntu/trusty64"
+base_box = "ubuntu/jammy64"
 
 # EC2
 ec2_access_key = ENV['AWS_ACCESS_KEY']
