@@ -52,7 +52,6 @@ import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.MockTime;
-import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.coordinator.common.runtime.CoordinatorRecord;
 import org.apache.kafka.coordinator.common.runtime.CoordinatorResult;
 import org.apache.kafka.coordinator.common.runtime.MockCoordinatorExecutor;
@@ -114,6 +113,7 @@ import org.apache.kafka.coordinator.group.streams.StreamsGroupHeartbeatResult;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.authorizer.Authorizer;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
+import org.apache.kafka.server.share.persister.InitializeShareGroupStateParameters;
 import org.apache.kafka.timeline.SnapshotRegistry;
 
 import java.net.InetAddress;
@@ -169,13 +169,7 @@ public class GroupMetadataManagerTestContext {
         ) {
             return new GroupCoordinatorConfigContext(
                 new AbstractConfig(
-                    Utils.mergeConfigs(List.of(
-                        GroupCoordinatorConfig.CLASSIC_GROUP_CONFIG_DEF,
-                        GroupCoordinatorConfig.GROUP_COORDINATOR_CONFIG_DEF,
-                        GroupCoordinatorConfig.OFFSET_MANAGEMENT_CONFIG_DEF,
-                        GroupCoordinatorConfig.CONSUMER_GROUP_CONFIG_DEF,
-                        GroupCoordinatorConfig.SHARE_GROUP_CONFIG_DEF
-                    )),
+                    GroupCoordinatorConfig.CONFIG_DEF,
                     props
                 )
             );
@@ -660,7 +654,7 @@ public class GroupMetadataManagerTestContext {
         return result;
     }
 
-    public CoordinatorResult<ShareGroupHeartbeatResponseData, CoordinatorRecord> shareGroupHeartbeat(
+    public CoordinatorResult<Map.Entry<ShareGroupHeartbeatResponseData, Optional<InitializeShareGroupStateParameters>>, CoordinatorRecord> shareGroupHeartbeat(
         ShareGroupHeartbeatRequestData request
     ) {
         RequestContext context = new RequestContext(
@@ -679,10 +673,11 @@ public class GroupMetadataManagerTestContext {
             false
         );
 
-        CoordinatorResult<ShareGroupHeartbeatResponseData, CoordinatorRecord> result = groupMetadataManager.shareGroupHeartbeat(
-            context,
-            request
-        );
+        CoordinatorResult<Map.Entry<ShareGroupHeartbeatResponseData, Optional<InitializeShareGroupStateParameters>>, CoordinatorRecord> result =
+            groupMetadataManager.shareGroupHeartbeat(
+                context,
+                request
+            );
 
         result.records().forEach(this::replay);
         return result;
