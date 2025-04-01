@@ -20,8 +20,7 @@ package org.apache.kafka.common.record;
  * Defines the record format versions supported by Kafka.
  *
  * For historical reasons, the record format version is also known as `magic` and `message format version`. Note that
- * the version actually applies to the {@link RecordBatch} (instead of the {@link Record}). Finally, the
- * `message.format.version` topic config confusingly expects an ApiVersion instead of a RecordVersion.
+ * the version actually applies to the {@link RecordBatch} (instead of the {@link Record}). 
  */
 public enum RecordVersion {
     V0(0), V1(1), V2(2);
