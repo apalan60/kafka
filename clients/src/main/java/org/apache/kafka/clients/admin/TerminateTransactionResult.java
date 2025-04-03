@@ -14,14 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.kafka.streams.processor;
+
+package org.apache.kafka.clients.admin;
+
+import org.apache.kafka.common.KafkaFuture;
 
 /**
- * Restoration logic for log-backed state stores upon restart,
- * it takes one record at a time from the logs to apply to the restoring state.
+ * The result of the {@link Admin#forceTerminateTransaction(String)} call.
  */
-@FunctionalInterface
-public interface StateRestoreCallback {
+public class TerminateTransactionResult {
 
-    void restore(byte[] key, byte[] value);
+    private final KafkaFuture<Void> future;
+
+    TerminateTransactionResult(KafkaFuture<Void> future) {
+        this.future = future;
+    }
+
+    /**
+     * Return a future which indicates whether the transaction was successfully terminated.
+     */
+    public KafkaFuture<Void> result() {
+        return future;
+    }
 }
