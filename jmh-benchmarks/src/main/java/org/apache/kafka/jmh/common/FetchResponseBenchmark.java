@@ -46,6 +46,7 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -103,13 +104,13 @@ public class FetchResponseBenchmark {
         }
 
         this.header = new ResponseHeader(100, ApiKeys.FETCH.responseHeaderVersion(ApiKeys.FETCH.latestVersion()));
-        this.fetchResponse = FetchResponse.of(Errors.NONE, 0, 0, responseData);
+        this.fetchResponse = FetchResponse.of(Errors.NONE, 0, 0, responseData, Collections.emptyList());
         this.fetchResponseData = this.fetchResponse.data();
     }
 
     @Benchmark
     public int testConstructFetchResponse() {
-        FetchResponse fetchResponse = FetchResponse.of(Errors.NONE, 0, 0, responseData);
+        FetchResponse fetchResponse = FetchResponse.of(Errors.NONE, 0, 0, responseData, Collections.emptyList());
         return fetchResponse.data().responses().size();
     }
 

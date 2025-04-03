@@ -42,6 +42,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -93,7 +94,7 @@ public class FetchSessionBenchmark {
         }
         builder.build();
         // build and handle an initial response so that the next fetch will be incremental
-        handler.handleResponse(FetchResponse.of(Errors.NONE, 0, 1, respMap), ApiKeys.FETCH.latestVersion());
+        handler.handleResponse(FetchResponse.of(Errors.NONE, 0, 1, respMap, Collections.emptyList()), ApiKeys.FETCH.latestVersion());
 
         int counter = 0;
         for (TopicPartition topicPartition: new ArrayList<>(fetches.keySet())) {

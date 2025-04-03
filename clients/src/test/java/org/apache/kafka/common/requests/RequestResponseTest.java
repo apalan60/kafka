@@ -536,7 +536,7 @@ public class RequestResponseTest {
                         .setHighWatermark(1000000)
                         .setLogStartOffset(-1)
                         .setRecords(records));
-        FetchResponse idTestResponse = FetchResponse.of(Errors.NONE, 0, INVALID_SESSION_ID, idResponseData);
+        FetchResponse idTestResponse = FetchResponse.of(Errors.NONE, 0, INVALID_SESSION_ID, idResponseData, Collections.emptyList());
         FetchResponse v12Deserialized = FetchResponse.parse(idTestResponse.serialize((short) 12), (short) 12);
         FetchResponse newestDeserialized = FetchResponse.parse(idTestResponse.serialize(FETCH.latestVersion()), FETCH.latestVersion());
         assertTrue(v12Deserialized.topicIds().isEmpty());
@@ -577,7 +577,7 @@ public class RequestResponseTest {
                         .setLastStableOffset(6)
                         .setRecords(records));
 
-        FetchResponse response = FetchResponse.of(Errors.NONE, 10, INVALID_SESSION_ID, responseData);
+        FetchResponse response = FetchResponse.of(Errors.NONE, 10, INVALID_SESSION_ID, responseData, Collections.emptyList());
         FetchResponse deserialized = FetchResponse.parse(response.serialize((short) 4), (short) 4);
         assertEquals(responseData.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().topicPartition(), Map.Entry::getValue)),
                 deserialized.responseData(topicNames, (short) 4));
@@ -2017,7 +2017,7 @@ public class RequestResponseTest {
 
     private FetchResponse createFetchResponse(Errors error, int sessionId) {
         return FetchResponse.parse(
-            FetchResponse.of(error, 25, sessionId, new LinkedHashMap<>()).serialize(FETCH.latestVersion()), FETCH.latestVersion());
+            FetchResponse.of(error, 25, sessionId, new LinkedHashMap<>(), Collections.emptyList()).serialize(FETCH.latestVersion()), FETCH.latestVersion());
     }
 
     private FetchResponse createFetchResponse(int sessionId) {
@@ -2039,7 +2039,7 @@ public class RequestResponseTest {
                         .setAbortedTransactions(abortedTransactions)
                         .setRecords(MemoryRecords.EMPTY));
         return FetchResponse.parse(FetchResponse.of(Errors.NONE, 25, sessionId,
-            responseData).serialize(FETCH.latestVersion()), FETCH.latestVersion());
+            responseData, Collections.emptyList()).serialize(FETCH.latestVersion()), FETCH.latestVersion());
     }
 
     private FetchResponse createFetchResponse(boolean includeAborted) {
@@ -2064,7 +2064,7 @@ public class RequestResponseTest {
                         .setAbortedTransactions(abortedTransactions)
                         .setRecords(MemoryRecords.EMPTY));
         return FetchResponse.parse(FetchResponse.of(Errors.NONE, 25, INVALID_SESSION_ID,
-            responseData).serialize(FETCH.latestVersion()), FETCH.latestVersion());
+            responseData, Collections.emptyList()).serialize(FETCH.latestVersion()), FETCH.latestVersion());
     }
 
     private FetchResponse createFetchResponse(short version) {
