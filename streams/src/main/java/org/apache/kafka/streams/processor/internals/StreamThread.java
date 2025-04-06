@@ -870,8 +870,7 @@ public class StreamThread extends Thread implements ProcessingThread {
 
     public void maybeSendShutdown() {
         if (assignmentErrorCode.get() == AssignorError.SHUTDOWN_REQUESTED.code()) {
-            if (shutDownRequested.compareAndSet(false, true))
-            {
+            if (shutDownRequested.compareAndSet(false, true)) {
                 log.warn("Detected that shutdown was requested. " +
                     "All clients in this app will now begin to shutdown");
             }
