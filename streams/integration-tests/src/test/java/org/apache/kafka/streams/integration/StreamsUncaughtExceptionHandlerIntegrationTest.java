@@ -24,6 +24,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.LogCaptureAppender;
+import org.apache.kafka.common.utils.MockTime;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -337,9 +338,10 @@ public class StreamsUncaughtExceptionHandlerIntegrationTest {
         properties.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, numThreads);
 
         final Topology topology = builder.build();
-
-        try (final KafkaStreams kafkaStreams1 = new KafkaStreams(topology, properties);
-             final KafkaStreams kafkaStreams2 = new KafkaStreams(topology, properties);
+        final MockTime time = new MockTime(0L);
+        
+        try (final KafkaStreams kafkaStreams1 = new KafkaStreams(topology, properties, time);
+             final KafkaStreams kafkaStreams2 = new KafkaStreams(topology, properties, time);
              final LogCaptureAppender logCaptureAppender = LogCaptureAppender.createAndRegister()) {
             kafkaStreams1.setUncaughtExceptionHandler(exception -> SHUTDOWN_APPLICATION);
             kafkaStreams2.setUncaughtExceptionHandler(exception -> SHUTDOWN_APPLICATION);
