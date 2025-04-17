@@ -92,12 +92,13 @@ class TransactionLogConfigTest {
         assertFalse(transactionLogConfig.transactionPartitionVerificationEnable());
         assertEquals(88, transactionLogConfig.producerIdExpirationMs());
 
-        // If the following calls are missing, we won’t be able to distinguish whether the value is set in the constructor or if
-        // it fetches the latest value from AbstractConfig with each call.
+        // This TransactionLogConfig instance is expected to be replaced entirely when dynamic config updates occur.
+        // Calling the getters a second time ensures they return the values established at construction,
+        // rather than invoking AbstractConfig again on each call.
         transactionLogConfig.transactionPartitionVerificationEnable();
         transactionLogConfig.producerIdExpirationMs();
 
-        verify(config, times(2)).getBoolean(TransactionLogConfig.TRANSACTION_PARTITION_VERIFICATION_ENABLE_CONFIG);
-        verify(config, times(2)).getInt(TransactionLogConfig.PRODUCER_ID_EXPIRATION_MS_CONFIG);
+        verify(config, times(1)).getBoolean(TransactionLogConfig.TRANSACTION_PARTITION_VERIFICATION_ENABLE_CONFIG);
+        verify(config, times(1)).getInt(TransactionLogConfig.PRODUCER_ID_EXPIRATION_MS_CONFIG);
     }
 }
