@@ -376,6 +376,8 @@ public class RemoteIndexCacheTest {
         // close the cache properly
         cache.close();
         // verify that the thread is closed properly
+        TestUtils.waitForCondition(() -> getRunningCleanerThread().isEmpty(),
+                "Failed while waiting for cleaner thread to shutdown");
         threads = getRunningCleanerThread();
         assertTrue(threads.isEmpty(), "Found unexpected " + threads.size() + " threads=" + threads.stream().map(Thread::getName).collect(Collectors.joining(", ")));
         // if the thread is correctly being shutdown it will not be running
