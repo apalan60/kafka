@@ -554,9 +554,14 @@ class RemoteTopicCrudTest {
 
             admin.deleteTopics(List.of(testTopicName)).all().get();
 
-            assertThrowsException(UnknownTopicOrPartitionException.class,
-                () -> admin.describeTopics(List.of(testTopicName)).allTopicNames().get(),
-                "Topic should be deleted");
+            TestUtils.waitForCondition(() -> {
+                try {
+                    admin.describeTopics(List.of(testTopicName)).allTopicNames().get();
+                    return false;
+                } catch (Exception exception) {
+                    return exception.getCause() instanceof UnknownTopicOrPartitionException;
+                }
+            },  "Topic should be deleted");
 
             TestUtils.waitForCondition(() ->
                     numPartitions * MyRemoteLogMetadataManager.SEGMENT_COUNT_PER_PARTITION == MyRemoteStorageManager.DELETE_SEGMENT_EVENT_COUNTER.get(), 
