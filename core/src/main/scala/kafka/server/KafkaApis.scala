@@ -126,7 +126,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     info("Shutdown complete.")
   }
 
-  private def forwardToController(request: RequestChannel.Request): Unit = {
+  private def forwardToController(request: RequestChannel.Request): CompletableFuture[Unit] = {
     def responseCallback(responseOpt: Option[AbstractResponse]): Unit = {
       responseOpt match {
         case Some(response) => requestHelper.sendForwardedResponse(request, response)
@@ -135,6 +135,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
 
     forwardingManager.forwardRequest(request, responseCallback)
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def handleInvalidVersionsDuringForwarding(request: RequestChannel.Request): Unit = {
@@ -165,83 +166,83 @@ class KafkaApis(val requestChannel: RequestChannel,
       }
 
       request.header.apiKey match {
-        case ApiKeys.PRODUCE => handleProduceRequest(request, requestLocal)
-        case ApiKeys.FETCH => handleFetchRequest(request)
-        case ApiKeys.LIST_OFFSETS => handleListOffsetRequest(request)
-        case ApiKeys.METADATA => handleTopicMetadataRequest(request)
+        case ApiKeys.PRODUCE => handleProduceRequest(request, requestLocal).exceptionally(handleError)
+        case ApiKeys.FETCH => handleFetchRequest(request).exceptionally(handleError)
+        case ApiKeys.LIST_OFFSETS => handleListOffsetRequest(request).exceptionally(handleError)
+        case ApiKeys.METADATA => handleTopicMetadataRequest(request).exceptionally(handleError)
         case ApiKeys.OFFSET_COMMIT => handleOffsetCommitRequest(request, requestLocal).exceptionally(handleError)
         case ApiKeys.OFFSET_FETCH => handleOffsetFetchRequest(request).exceptionally(handleError)
-        case ApiKeys.FIND_COORDINATOR => handleFindCoordinatorRequest(request)
+        case ApiKeys.FIND_COORDINATOR => handleFindCoordinatorRequest(request).exceptionally(handleError)
         case ApiKeys.JOIN_GROUP => handleJoinGroupRequest(request, requestLocal).exceptionally(handleError)
         case ApiKeys.HEARTBEAT => handleHeartbeatRequest(request).exceptionally(handleError)
         case ApiKeys.LEAVE_GROUP => handleLeaveGroupRequest(request).exceptionally(handleError)
         case ApiKeys.SYNC_GROUP => handleSyncGroupRequest(request, requestLocal).exceptionally(handleError)
         case ApiKeys.DESCRIBE_GROUPS => handleDescribeGroupsRequest(request).exceptionally(handleError)
         case ApiKeys.LIST_GROUPS => handleListGroupsRequest(request).exceptionally(handleError)
-        case ApiKeys.SASL_HANDSHAKE => handleSaslHandshakeRequest(request)
-        case ApiKeys.API_VERSIONS => handleApiVersionsRequest(request)
-        case ApiKeys.CREATE_TOPICS => forwardToController(request)
-        case ApiKeys.DELETE_TOPICS => forwardToController(request)
-        case ApiKeys.DELETE_RECORDS => handleDeleteRecordsRequest(request)
-        case ApiKeys.INIT_PRODUCER_ID => handleInitProducerIdRequest(request, requestLocal)
-        case ApiKeys.OFFSET_FOR_LEADER_EPOCH => handleOffsetForLeaderEpochRequest(request)
-        case ApiKeys.ADD_PARTITIONS_TO_TXN => handleAddPartitionsToTxnRequest(request, requestLocal)
-        case ApiKeys.ADD_OFFSETS_TO_TXN => handleAddOffsetsToTxnRequest(request, requestLocal)
-        case ApiKeys.END_TXN => handleEndTxnRequest(request, requestLocal)
-        case ApiKeys.WRITE_TXN_MARKERS => handleWriteTxnMarkersRequest(request, requestLocal)
+        case ApiKeys.SASL_HANDSHAKE => handleSaslHandshakeRequest(request).exceptionally(handleError)
+        case ApiKeys.API_VERSIONS => handleApiVersionsRequest(request).exceptionally(handleError)
+        case ApiKeys.CREATE_TOPICS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DELETE_TOPICS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DELETE_RECORDS => handleDeleteRecordsRequest(request).exceptionally(handleError)
+        case ApiKeys.INIT_PRODUCER_ID => handleInitProducerIdRequest(request, requestLocal).exceptionally(handleError)
+        case ApiKeys.OFFSET_FOR_LEADER_EPOCH => handleOffsetForLeaderEpochRequest(request).exceptionally(handleError)
+        case ApiKeys.ADD_PARTITIONS_TO_TXN => handleAddPartitionsToTxnRequest(request, requestLocal).exceptionally(handleError)
+        case ApiKeys.ADD_OFFSETS_TO_TXN => handleAddOffsetsToTxnRequest(request, requestLocal).exceptionally(handleError)
+        case ApiKeys.END_TXN => handleEndTxnRequest(request, requestLocal).exceptionally(handleError)
+        case ApiKeys.WRITE_TXN_MARKERS => handleWriteTxnMarkersRequest(request, requestLocal).exceptionally(handleError)
         case ApiKeys.TXN_OFFSET_COMMIT => handleTxnOffsetCommitRequest(request, requestLocal).exceptionally(handleError)
-        case ApiKeys.DESCRIBE_ACLS => handleDescribeAcls(request)
-        case ApiKeys.CREATE_ACLS => forwardToController(request)
-        case ApiKeys.DELETE_ACLS => forwardToController(request)
-        case ApiKeys.ALTER_CONFIGS => handleAlterConfigsRequest(request)
-        case ApiKeys.DESCRIBE_CONFIGS => handleDescribeConfigsRequest(request)
-        case ApiKeys.ALTER_REPLICA_LOG_DIRS => handleAlterReplicaLogDirsRequest(request)
-        case ApiKeys.DESCRIBE_LOG_DIRS => handleDescribeLogDirsRequest(request)
-        case ApiKeys.SASL_AUTHENTICATE => handleSaslAuthenticateRequest(request)
-        case ApiKeys.CREATE_PARTITIONS => forwardToController(request)
+        case ApiKeys.DESCRIBE_ACLS => handleDescribeAcls(request).exceptionally(handleError)
+        case ApiKeys.CREATE_ACLS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DELETE_ACLS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.ALTER_CONFIGS => handleAlterConfigsRequest(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_CONFIGS => handleDescribeConfigsRequest(request).exceptionally(handleError)
+        case ApiKeys.ALTER_REPLICA_LOG_DIRS => handleAlterReplicaLogDirsRequest(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_LOG_DIRS => handleDescribeLogDirsRequest(request).exceptionally(handleError)
+        case ApiKeys.SASL_AUTHENTICATE => handleSaslAuthenticateRequest(request).exceptionally(handleError)
+        case ApiKeys.CREATE_PARTITIONS => forwardToController(request).exceptionally(handleError)
         // Create, renew and expire DelegationTokens must first validate that the connection
         // itself is not authenticated with a delegation token before maybeForwardToController.
-        case ApiKeys.CREATE_DELEGATION_TOKEN => handleCreateTokenRequest(request)
-        case ApiKeys.RENEW_DELEGATION_TOKEN => handleRenewTokenRequest(request)
-        case ApiKeys.EXPIRE_DELEGATION_TOKEN => handleExpireTokenRequest(request)
-        case ApiKeys.DESCRIBE_DELEGATION_TOKEN => handleDescribeTokensRequest(request)
+        case ApiKeys.CREATE_DELEGATION_TOKEN => handleCreateTokenRequest(request).exceptionally(handleError)
+        case ApiKeys.RENEW_DELEGATION_TOKEN => handleRenewTokenRequest(request).exceptionally(handleError)
+        case ApiKeys.EXPIRE_DELEGATION_TOKEN => handleExpireTokenRequest(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_DELEGATION_TOKEN => handleDescribeTokensRequest(request).exceptionally(handleError)
         case ApiKeys.DELETE_GROUPS => handleDeleteGroupsRequest(request, requestLocal).exceptionally(handleError)
-        case ApiKeys.ELECT_LEADERS => forwardToController(request)
-        case ApiKeys.INCREMENTAL_ALTER_CONFIGS => handleIncrementalAlterConfigsRequest(request)
-        case ApiKeys.ALTER_PARTITION_REASSIGNMENTS => forwardToController(request)
-        case ApiKeys.LIST_PARTITION_REASSIGNMENTS => forwardToController(request)
+        case ApiKeys.ELECT_LEADERS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.INCREMENTAL_ALTER_CONFIGS => handleIncrementalAlterConfigsRequest(request).exceptionally(handleError)
+        case ApiKeys.ALTER_PARTITION_REASSIGNMENTS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.LIST_PARTITION_REASSIGNMENTS => forwardToController(request).exceptionally(handleError)
         case ApiKeys.OFFSET_DELETE => handleOffsetDeleteRequest(request, requestLocal).exceptionally(handleError)
-        case ApiKeys.DESCRIBE_CLIENT_QUOTAS => handleDescribeClientQuotasRequest(request)
-        case ApiKeys.ALTER_CLIENT_QUOTAS => forwardToController(request)
-        case ApiKeys.DESCRIBE_USER_SCRAM_CREDENTIALS => handleDescribeUserScramCredentialsRequest(request)
-        case ApiKeys.ALTER_USER_SCRAM_CREDENTIALS => forwardToController(request)
-        case ApiKeys.UPDATE_FEATURES => forwardToController(request)
-        case ApiKeys.DESCRIBE_CLUSTER => handleDescribeCluster(request)
-        case ApiKeys.DESCRIBE_PRODUCERS => handleDescribeProducersRequest(request)
-        case ApiKeys.UNREGISTER_BROKER => forwardToController(request)
-        case ApiKeys.DESCRIBE_TRANSACTIONS => handleDescribeTransactionsRequest(request)
-        case ApiKeys.LIST_TRANSACTIONS => handleListTransactionsRequest(request)
-        case ApiKeys.DESCRIBE_QUORUM => forwardToController(request)
+        case ApiKeys.DESCRIBE_CLIENT_QUOTAS => handleDescribeClientQuotasRequest(request).exceptionally(handleError)
+        case ApiKeys.ALTER_CLIENT_QUOTAS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_USER_SCRAM_CREDENTIALS => handleDescribeUserScramCredentialsRequest(request).exceptionally(handleError)
+        case ApiKeys.ALTER_USER_SCRAM_CREDENTIALS => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.UPDATE_FEATURES => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_CLUSTER => handleDescribeCluster(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_PRODUCERS => handleDescribeProducersRequest(request).exceptionally(handleError)
+        case ApiKeys.UNREGISTER_BROKER => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_TRANSACTIONS => handleDescribeTransactionsRequest(request).exceptionally(handleError)
+        case ApiKeys.LIST_TRANSACTIONS => handleListTransactionsRequest(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_QUORUM => forwardToController(request).exceptionally(handleError)
         case ApiKeys.CONSUMER_GROUP_HEARTBEAT => handleConsumerGroupHeartbeat(request).exceptionally(handleError)
         case ApiKeys.CONSUMER_GROUP_DESCRIBE => handleConsumerGroupDescribe(request).exceptionally(handleError)
-        case ApiKeys.DESCRIBE_TOPIC_PARTITIONS => handleDescribeTopicPartitionsRequest(request)
-        case ApiKeys.GET_TELEMETRY_SUBSCRIPTIONS => handleGetTelemetrySubscriptionsRequest(request)
-        case ApiKeys.PUSH_TELEMETRY => handlePushTelemetryRequest(request)
-        case ApiKeys.LIST_CLIENT_METRICS_RESOURCES => handleListClientMetricsResources(request)
-        case ApiKeys.ADD_RAFT_VOTER => forwardToController(request)
-        case ApiKeys.REMOVE_RAFT_VOTER => forwardToController(request)
+        case ApiKeys.DESCRIBE_TOPIC_PARTITIONS => handleDescribeTopicPartitionsRequest(request).exceptionally(handleError)
+        case ApiKeys.GET_TELEMETRY_SUBSCRIPTIONS => handleGetTelemetrySubscriptionsRequest(request).exceptionally(handleError)
+        case ApiKeys.PUSH_TELEMETRY => handlePushTelemetryRequest(request).exceptionally(handleError)
+        case ApiKeys.LIST_CLIENT_METRICS_RESOURCES => handleListClientMetricsResources(request).exceptionally(handleError)
+        case ApiKeys.ADD_RAFT_VOTER => forwardToController(request).exceptionally(handleError)
+        case ApiKeys.REMOVE_RAFT_VOTER => forwardToController(request).exceptionally(handleError)
         case ApiKeys.SHARE_GROUP_HEARTBEAT => handleShareGroupHeartbeat(request).exceptionally(handleError)
         case ApiKeys.SHARE_GROUP_DESCRIBE => handleShareGroupDescribe(request).exceptionally(handleError)
-        case ApiKeys.SHARE_FETCH => handleShareFetchRequest(request)
-        case ApiKeys.SHARE_ACKNOWLEDGE => handleShareAcknowledgeRequest(request)
-        case ApiKeys.INITIALIZE_SHARE_GROUP_STATE => handleInitializeShareGroupStateRequest(request)
-        case ApiKeys.READ_SHARE_GROUP_STATE => handleReadShareGroupStateRequest(request)
-        case ApiKeys.WRITE_SHARE_GROUP_STATE => handleWriteShareGroupStateRequest(request)
-        case ApiKeys.DELETE_SHARE_GROUP_STATE => handleDeleteShareGroupStateRequest(request)
-        case ApiKeys.READ_SHARE_GROUP_STATE_SUMMARY => handleReadShareGroupStateSummaryRequest(request)
-        case ApiKeys.DESCRIBE_SHARE_GROUP_OFFSETS => handleDescribeShareGroupOffsetsRequest(request)
-        case ApiKeys.ALTER_SHARE_GROUP_OFFSETS => handleAlterShareGroupOffsetsRequest(request)
-        case ApiKeys.DELETE_SHARE_GROUP_OFFSETS => handleDeleteShareGroupOffsetsRequest(request)
+        case ApiKeys.SHARE_FETCH => handleShareFetchRequest(request).exceptionally(handleError)
+        case ApiKeys.SHARE_ACKNOWLEDGE => handleShareAcknowledgeRequest(request).exceptionally(handleError)
+        case ApiKeys.INITIALIZE_SHARE_GROUP_STATE => handleInitializeShareGroupStateRequest(request).exceptionally(handleError)
+        case ApiKeys.READ_SHARE_GROUP_STATE => handleReadShareGroupStateRequest(request).exceptionally(handleError)
+        case ApiKeys.WRITE_SHARE_GROUP_STATE => handleWriteShareGroupStateRequest(request).exceptionally(handleError)
+        case ApiKeys.DELETE_SHARE_GROUP_STATE => handleDeleteShareGroupStateRequest(request).exceptionally(handleError)
+        case ApiKeys.READ_SHARE_GROUP_STATE_SUMMARY => handleReadShareGroupStateSummaryRequest(request).exceptionally(handleError)
+        case ApiKeys.DESCRIBE_SHARE_GROUP_OFFSETS => handleDescribeShareGroupOffsetsRequest(request).exceptionally(handleError)
+        case ApiKeys.ALTER_SHARE_GROUP_OFFSETS => handleAlterShareGroupOffsetsRequest(request).exceptionally(handleError)
+        case ApiKeys.DELETE_SHARE_GROUP_OFFSETS => handleDeleteShareGroupOffsetsRequest(request).exceptionally(handleError)
         case ApiKeys.STREAMS_GROUP_DESCRIBE => handleStreamsGroupDescribe(request).exceptionally(handleError)
         case ApiKeys.STREAMS_GROUP_HEARTBEAT => handleStreamsGroupHeartbeat(request).exceptionally(handleError)
         case _ => throw new IllegalStateException(s"No handler for request api key ${request.header.apiKey}")
@@ -384,7 +385,7 @@ class KafkaApis(val requestChannel: RequestChannel,
   /**
    * Handle a produce request
    */
-  def handleProduceRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleProduceRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     val produceRequest = request.body[ProduceRequest]
 
     if (RequestUtils.hasTransactionalRecords(produceRequest)) {
@@ -392,7 +393,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         authHelper.authorize(request.context, WRITE, TRANSACTIONAL_ID, produceRequest.transactionalId)
       if (!isAuthorizedTransactional) {
         requestHelper.sendErrorResponseMaybeThrottle(request, Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.exception)
-        return
+        CompletableFuture.completedFuture[Unit](())
       }
     }
 
@@ -524,8 +525,10 @@ class KafkaApis(val requestChannel: RequestChannel,
       }
     }
 
-    if (authorizedRequestInfo.isEmpty)
+    if (authorizedRequestInfo.isEmpty) {
       sendResponseCallback(Map.empty)
+      CompletableFuture.completedFuture[Unit](())
+    }
     else {
       val internalTopicsAllowed = request.header.clientId == "__admin_client"
       val transactionSupportedOperation = AddPartitionsToTxnManager.produceRequestVersionToTransactionSupportedOperation(request.header.apiVersion())
@@ -544,13 +547,14 @@ class KafkaApis(val requestChannel: RequestChannel,
       // if the request is put into the purgatory, it will have a held reference and hence cannot be garbage collected;
       // hence we clear its data here in order to let GC reclaim its memory since it is already appended to log
       produceRequest.clearPartitionRecords()
+      CompletableFuture.completedFuture[Unit](())
     }
   }
 
   /**
    * Handle a fetch request
    */
-  def handleFetchRequest(request: RequestChannel.Request): Unit = {
+  def handleFetchRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val versionId = request.header.apiVersion
     val clientId = request.header.clientId
     val fetchRequest = request.body[FetchRequest]
@@ -721,6 +725,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (interesting.isEmpty) {
       processResponseCallback(Seq.empty)
+      CompletableFuture.completedFuture[Unit](())
     } else {
       // for fetch from consumer, cap fetchMaxBytes to the maximum bytes that could be fetched without being throttled given
       // no bytes were recorded in the recent quota window
@@ -762,13 +767,15 @@ class KafkaApis(val requestChannel: RequestChannel,
         quota = replicationQuota(fetchRequest),
         responseCallback = processResponseCallback,
       )
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def replicationQuota(fetchRequest: FetchRequest): ReplicaQuota =
     if (fetchRequest.isFromFollower) quotas.leader else UNBOUNDED_QUOTA
 
-  def handleListOffsetRequest(request: RequestChannel.Request): Unit = {
+  def handleListOffsetRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val correlationId = request.header.correlationId
     val clientId = request.header.clientId
     val offsetRequest = request.body[ListOffsetsRequest]
@@ -804,10 +811,12 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (authorizedRequestInfo.isEmpty) {
       sendResponseCallback(util.List.of)
+      CompletableFuture.completedFuture[Unit](())
     } else {
       replicaManager.fetchOffset(authorizedRequestInfo, offsetRequest.duplicatePartitions().asScala,
         offsetRequest.isolationLevel(), offsetRequest.replicaId(), clientId, correlationId, version,
         buildErrorResponse, sendResponseCallback, offsetRequest.timeoutMs())
+      CompletableFuture.completedFuture[Unit](())
     }
   }
 
@@ -867,7 +876,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleTopicMetadataRequest(request: RequestChannel.Request): Unit = {
+  def handleTopicMetadataRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val metadataRequest = request.body[MetadataRequest]
     val requestVersion = request.header.apiVersion
 
@@ -989,9 +998,10 @@ class KafkaApis(val requestChannel: RequestChannel,
          completeTopicMetadata.asJava,
          clusterAuthorizedOperations
       ))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeTopicPartitionsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeTopicPartitionsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val response = describeTopicPartitionsRequestHandler.handleDescribeTopicPartitionsRequest(request)
     trace("Sending topic partitions metadata %s for correlation id %d to client %s".format(response.topics().asScala.mkString(","),
       request.header.correlationId, request.header.clientId))
@@ -1000,6 +1010,7 @@ class KafkaApis(val requestChannel: RequestChannel,
       response.setThrottleTimeMs(requestThrottleMs)
       new DescribeTopicPartitionsResponse(response)
     })
+    CompletableFuture.completedFuture[Unit](())
   }
 
   /**
@@ -1168,13 +1179,16 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleFindCoordinatorRequest(request: RequestChannel.Request): Unit = {
+  def handleFindCoordinatorRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val version = request.header.apiVersion
     if (version < 4) {
       handleFindCoordinatorRequestLessThanV4(request)
+      CompletableFuture.completedFuture[Unit](())
     } else {
       handleFindCoordinatorRequestV4AndAbove(request)
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def handleFindCoordinatorRequestV4AndAbove(request: RequestChannel.Request): Unit = {
@@ -1487,19 +1501,21 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleSaslHandshakeRequest(request: RequestChannel.Request): Unit = {
+  def handleSaslHandshakeRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val responseData = new SaslHandshakeResponseData().setErrorCode(Errors.ILLEGAL_SASL_STATE.code)
     requestHelper.sendResponseMaybeThrottle(request, _ => new SaslHandshakeResponse(responseData))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleSaslAuthenticateRequest(request: RequestChannel.Request): Unit = {
+  def handleSaslAuthenticateRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val responseData = new SaslAuthenticateResponseData()
       .setErrorCode(Errors.ILLEGAL_SASL_STATE.code)
       .setErrorMessage("SaslAuthenticate request received after successful authentication")
     requestHelper.sendResponseMaybeThrottle(request, _ => new SaslAuthenticateResponse(responseData))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleApiVersionsRequest(request: RequestChannel.Request): Unit = {
+  def handleApiVersionsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     // Note that broker returns its full list of supported ApiKeys and versions regardless of current
     // authentication state (e.g., before SASL authentication on an SASL listener, do note that no
     // Kafka protocol requests may take place on an SSL listener before the SSL handshake is finished).
@@ -1517,9 +1533,10 @@ class KafkaApis(val requestChannel: RequestChannel,
       }
     }
     requestHelper.sendResponseMaybeThrottle(request, createResponseCallback)
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDeleteRecordsRequest(request: RequestChannel.Request): Unit = {
+  def handleDeleteRecordsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val deleteRecordsRequest = request.body[DeleteRecordsRequest]
 
     val unauthorizedTopicResponses = mutable.Map[TopicPartition, DeleteRecordsPartitionResult]()
@@ -1581,26 +1598,28 @@ class KafkaApis(val requestChannel: RequestChannel,
         deleteRecordsRequest.data.timeoutMs.toLong,
         authorizedForDeleteTopicOffsets,
         sendResponseCallback)
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleInitProducerIdRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleInitProducerIdRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     val initProducerIdRequest = request.body[InitProducerIdRequest]
     val transactionalId = initProducerIdRequest.data.transactionalId
 
     if (transactionalId != null) {
       if (!authHelper.authorize(request.context, WRITE, TRANSACTIONAL_ID, transactionalId)) {
         requestHelper.sendErrorResponseMaybeThrottle(request, Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.exception)
-        return
+        return CompletableFuture.completedFuture[Unit](())
       }
       if (initProducerIdRequest.enable2Pc() && !authHelper.authorize(request.context, TWO_PHASE_COMMIT, TRANSACTIONAL_ID, transactionalId)) {
         requestHelper.sendErrorResponseMaybeThrottle(request, Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.exception)
-        return
+        return CompletableFuture.completedFuture[Unit](())
       }
     } else if (!authHelper.authorize(request.context, IDEMPOTENT_WRITE, CLUSTER, CLUSTER_NAME, true, false)
         && !authHelper.authorizeByResourceType(request.context, AclOperation.WRITE, ResourceType.TOPIC)) {
       requestHelper.sendErrorResponseMaybeThrottle(request, Errors.CLUSTER_AUTHORIZATION_FAILED.exception)
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     def sendResponseCallback(result: InitProducerIdResult): Unit = {
@@ -1645,11 +1664,13 @@ class KafkaApis(val requestChannel: RequestChannel,
             sendResponseCallback,
             requestLocal
         )
+        CompletableFuture.completedFuture[Unit](())
       case Left(error) => requestHelper.sendErrorResponseMaybeThrottle(request, error.exception)
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleEndTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleEndTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     val endTxnRequest = request.body[EndTxnRequest]
     val transactionalId = endTxnRequest.data.transactionalId
 
@@ -1684,15 +1705,17 @@ class KafkaApis(val requestChannel: RequestChannel,
         TransactionVersion.transactionVersionForEndTxn(endTxnRequest),
         sendResponseCallback,
         requestLocal)
+      CompletableFuture.completedFuture[Unit](())
     } else
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new EndTxnResponse(new EndTxnResponseData()
             .setErrorCode(Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.code)
             .setThrottleTimeMs(requestThrottleMs))
       )
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleWriteTxnMarkersRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleWriteTxnMarkersRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     // We are checking for AlterCluster permissions first. If it is not present, we are authorizing cluster operation
     // The latter will throw an exception if it is denied.
     if (!authHelper.authorize(request.context, ALTER, CLUSTER, CLUSTER_NAME, logIfDenied = false)) {
@@ -1705,7 +1728,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (numAppends.get == 0) {
       requestHelper.sendResponseExemptThrottle(request, new WriteTxnMarkersResponse(errors))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     def updateErrors(producerId: Long, currentErrors: ConcurrentHashMap[TopicPartition, Errors]): Unit = {
@@ -1830,9 +1853,10 @@ class KafkaApis(val requestChannel: RequestChannel,
     // so we need to send the error response
     if (skippedMarkers == markers.size)
       requestHelper.sendResponseExemptThrottle(request, new WriteTxnMarkersResponse(errors))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleAddPartitionsToTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleAddPartitionsToTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     val addPartitionsToTxnRequest =
       if (request.context.apiVersion() < 4)
         request.body[AddPartitionsToTxnRequest].normalizeRequest()
@@ -1942,9 +1966,10 @@ class KafkaApis(val requestChannel: RequestChannel,
         }
       }
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleAddOffsetsToTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): Unit = {
+  def handleAddOffsetsToTxnRequest(request: RequestChannel.Request, requestLocal: RequestLocal): CompletableFuture[Unit] = {
     val addOffsetsToTxnRequest = request.body[AddOffsetsToTxnRequest]
     val transactionalId = addOffsetsToTxnRequest.data.transactionalId
     val groupId = addOffsetsToTxnRequest.data.groupId
@@ -1991,7 +2016,9 @@ class KafkaApis(val requestChannel: RequestChannel,
         sendResponseCallback,
         TransactionVersion.TV_0, // This request will always come from the client not using TV 2.
         requestLocal)
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def handleTxnOffsetCommitRequest(
@@ -2095,11 +2122,11 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleDescribeAcls(request: RequestChannel.Request): Unit = {
+  def handleDescribeAcls(request: RequestChannel.Request): CompletableFuture[Unit] = {
     aclApis.handleDescribeAcls(request)
   }
 
-  def handleOffsetForLeaderEpochRequest(request: RequestChannel.Request): Unit = {
+  def handleOffsetForLeaderEpochRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val offsetForLeaderEpoch = request.body[OffsetsForLeaderEpochRequest]
     val topics = offsetForLeaderEpoch.data.topics.asScala.toSeq
 
@@ -2132,9 +2159,10 @@ class KafkaApis(val requestChannel: RequestChannel,
       new OffsetsForLeaderEpochResponse(new OffsetForLeaderEpochResponseData()
         .setThrottleTimeMs(requestThrottleMs)
         .setTopics(endOffsetsForAllTopics)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleAlterConfigsRequest(request: RequestChannel.Request): Unit = {
+  def handleAlterConfigsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val original = request.body[AlterConfigsRequest]
     val preprocessingResponses = configManager.preprocess(original.data())
     val remaining = ConfigAdminManager.copyWithoutPreprocessed(original.data(), preprocessingResponses)
@@ -2151,14 +2179,17 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
     if (remaining.resources().isEmpty) {
       sendResponse(Some(new AlterConfigsResponseData()))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardingManager.forwardRequest(request,
         new AlterConfigsRequest(remaining, request.header.apiVersion()),
         response => sendResponse(response.map(_.data())))
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleIncrementalAlterConfigsRequest(request: RequestChannel.Request): Unit = {
+  def handleIncrementalAlterConfigsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val original = request.body[IncrementalAlterConfigsRequest]
     val preprocessingResponses = configManager.preprocess(original.data(),
       (rType, rName) => authHelper.authorize(request.context, ALTER_CONFIGS, rType, rName))
@@ -2178,20 +2209,24 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (remaining.resources().isEmpty) {
       sendResponse(Some(new IncrementalAlterConfigsResponseData()))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardingManager.forwardRequest(request,
         new IncrementalAlterConfigsRequest(remaining, request.header.apiVersion()),
         response => sendResponse(response.map(_.data())))
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeConfigsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeConfigsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val responseData = configHelper.handleDescribeConfigsRequest(request, authHelper)
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
       new DescribeConfigsResponse(responseData.setThrottleTimeMs(requestThrottleMs)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleAlterReplicaLogDirsRequest(request: RequestChannel.Request): Unit = {
+  def handleAlterReplicaLogDirsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val alterReplicaDirsRequest = request.body[AlterReplicaLogDirsRequest]
     if (authHelper.authorize(request.context, ALTER, CLUSTER, CLUSTER_NAME)) {
       val result = replicaManager.alterReplicaLogDirs(alterReplicaDirsRequest.partitionDirs.asScala)
@@ -2207,13 +2242,16 @@ class KafkaApis(val requestChannel: RequestChannel,
               }.toList.asJava)
           }.toList.asJava)
           .setThrottleTimeMs(requestThrottleMs)))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         alterReplicaDirsRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeLogDirsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeLogDirsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeLogDirsDirRequest = request.body[DescribeLogDirsRequest]
     val (logDirInfos, error) = {
       if (authHelper.authorize(request.context, DESCRIBE, CLUSTER, CLUSTER_NAME)) {
@@ -2234,9 +2272,10 @@ class KafkaApis(val requestChannel: RequestChannel,
       .setThrottleTimeMs(throttleTimeMs)
       .setResults(logDirInfos.asJava)
       .setErrorCode(error.code)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleCreateTokenRequest(request: RequestChannel.Request): Unit = {
+  def handleCreateTokenRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val createTokenRequest = request.body[CreateDelegationTokenRequest]
 
     val requester = request.context.principal
@@ -2253,20 +2292,23 @@ class KafkaApis(val requestChannel: RequestChannel,
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         CreateDelegationTokenResponse.prepareResponse(request.context.requestVersion, requestThrottleMs,
           Errors.DELEGATION_TOKEN_REQUEST_NOT_ALLOWED, owner, requester))
+      CompletableFuture.completedFuture[Unit](())
     } else if (!owner.equals(requester) && !authHelper.authorize(request.context, CREATE_TOKENS, USER, owner.toString)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         CreateDelegationTokenResponse.prepareResponse(request.context.requestVersion, requestThrottleMs,
           Errors.DELEGATION_TOKEN_AUTHORIZATION_FAILED, owner, requester))
+      CompletableFuture.completedFuture[Unit](())
     } else if (renewerList.exists(principal => principal.getPrincipalType != KafkaPrincipal.USER_TYPE)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         CreateDelegationTokenResponse.prepareResponse(request.context.requestVersion, requestThrottleMs,
           Errors.INVALID_PRINCIPAL_TYPE, owner, requester))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardToController(request)
     }
   }
 
-  def handleExpireTokenRequest(request: RequestChannel.Request): Unit = {
+  def handleExpireTokenRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     if (!allowTokenRequests(request)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new ExpireDelegationTokenResponse(
@@ -2274,12 +2316,13 @@ class KafkaApis(val requestChannel: RequestChannel,
               .setThrottleTimeMs(requestThrottleMs)
               .setErrorCode(Errors.DELEGATION_TOKEN_REQUEST_NOT_ALLOWED.code)
               .setExpiryTimestampMs(DelegationTokenManager.ERROR_TIMESTAMP)))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardToController(request)
     }
   }
 
-  def handleRenewTokenRequest(request: RequestChannel.Request): Unit = {
+  def handleRenewTokenRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     if (!allowTokenRequests(request)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new RenewDelegationTokenResponse(
@@ -2287,12 +2330,13 @@ class KafkaApis(val requestChannel: RequestChannel,
             .setThrottleTimeMs(requestThrottleMs)
             .setErrorCode(Errors.DELEGATION_TOKEN_REQUEST_NOT_ALLOWED.code)
             .setExpiryTimestampMs(DelegationTokenManager.ERROR_TIMESTAMP)))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardToController(request)
     }
   }
 
-  def handleDescribeTokensRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeTokensRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeTokenRequest = request.body[DescribeDelegationTokenRequest]
 
     // the callback for sending a describe token response
@@ -2312,8 +2356,8 @@ class KafkaApis(val requestChannel: RequestChannel,
 
       if (describeTokenRequest.ownersListEmpty()) {
         sendResponseCallback(Errors.NONE, Collections.emptyList)
-      }
-      else {
+        CompletableFuture.completedFuture[Unit](())
+      } else {
         val owners: Optional[util.List[KafkaPrincipal]] = if (describeTokenRequest.data.owners == null)
           Optional.empty()
         else
@@ -2324,8 +2368,11 @@ class KafkaApis(val requestChannel: RequestChannel,
           .filterToken(requestPrincipal, owners, token, authorizeToken, authorizeRequester)
         val tokens =  tokenManager.getTokens(eligible)
         sendResponseCallback(Errors.NONE, tokens)
+        CompletableFuture.completedFuture[Unit](())
       }
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def allowTokenRequests(request: RequestChannel.Request): Boolean = {
@@ -2405,35 +2452,41 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleDescribeClientQuotasRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeClientQuotasRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeClientQuotasRequest = request.body[DescribeClientQuotasRequest]
 
     if (!authHelper.authorize(request.context, DESCRIBE_CONFIGS, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         describeClientQuotasRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       val result = metadataCache.describeClientQuotas(describeClientQuotasRequest.data())
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs => {
         result.setThrottleTimeMs(requestThrottleMs)
         new DescribeClientQuotasResponse(result)
       })
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeUserScramCredentialsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeUserScramCredentialsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeUserScramCredentialsRequest = request.body[DescribeUserScramCredentialsRequest]
 
     if (!authHelper.authorize(request.context, DESCRIBE, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         describeUserScramCredentialsRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       val result = metadataCache.describeScramCredentials(describeUserScramCredentialsRequest.data())
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new DescribeUserScramCredentialsResponse(result.setThrottleTimeMs(requestThrottleMs)))
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeCluster(request: RequestChannel.Request): Unit = {
+  def handleDescribeCluster(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val response = authHelper.computeDescribeClusterResponse(
       request,
       EndpointType.BROKER,
@@ -2459,9 +2512,10 @@ class KafkaApis(val requestChannel: RequestChannel,
     )
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
       new DescribeClusterResponse(response.setThrottleTimeMs(requestThrottleMs)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDescribeProducersRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeProducersRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeProducersRequest = request.body[DescribeProducersRequest]
 
     def partitionError(
@@ -2505,6 +2559,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
       new DescribeProducersResponse(response.setThrottleTimeMs(requestThrottleMs)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def checkValidTopic(topic: String): Option[ApiError] = {
@@ -2516,7 +2571,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleDescribeTransactionsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeTransactionsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeTransactionsRequest = request.body[DescribeTransactionsRequest]
     val response = new DescribeTransactionsResponseData()
 
@@ -2542,9 +2597,10 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
       new DescribeTransactionsResponse(response.setThrottleTimeMs(requestThrottleMs)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleListTransactionsRequest(request: RequestChannel.Request): Unit = {
+  def handleListTransactionsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val listTransactionsRequest = request.body[ListTransactionsRequest]
     val filteredProducerIds = listTransactionsRequest.data.producerIdFilters.asScala.map(Long.unbox).toSet
     val filteredStates = listTransactionsRequest.data.stateFilters.asScala.toSet
@@ -2569,6 +2625,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
       new ListTransactionsResponse(response.setThrottleTimeMs(requestThrottleMs)))
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def groupVersion(): GroupVersion = {
@@ -2906,37 +2963,44 @@ class KafkaApis(val requestChannel: RequestChannel,
 
   }
 
-  def handleGetTelemetrySubscriptionsRequest(request: RequestChannel.Request): Unit = {
+  def handleGetTelemetrySubscriptionsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val subscriptionRequest = request.body[GetTelemetrySubscriptionsRequest]
     try {
       requestHelper.sendMaybeThrottle(request, clientMetricsManager.processGetTelemetrySubscriptionRequest(subscriptionRequest, request.context))
+      CompletableFuture.completedFuture[Unit](())
     } catch {
       case _: Exception =>
         requestHelper.sendMaybeThrottle(request, subscriptionRequest.getErrorResponse(Errors.INVALID_REQUEST.exception))
+        CompletableFuture.completedFuture[Unit](())
     }
   }
 
-  private def handlePushTelemetryRequest(request: RequestChannel.Request): Unit = {
+  private def handlePushTelemetryRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val pushTelemetryRequest = request.body[PushTelemetryRequest]
     try {
       requestHelper.sendMaybeThrottle(request, clientMetricsManager.processPushTelemetryRequest(pushTelemetryRequest, request.context))
+      CompletableFuture.completedFuture[Unit](())
     } catch {
       case _: Exception =>
         requestHelper.sendMaybeThrottle(request, pushTelemetryRequest.getErrorResponse(Errors.INVALID_REQUEST.exception))
+        CompletableFuture.completedFuture[Unit](())
     }
   }
 
-  def handleListClientMetricsResources(request: RequestChannel.Request): Unit = {
+  def handleListClientMetricsResources(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val listClientMetricsResourcesRequest = request.body[ListClientMetricsResourcesRequest]
 
     if (!authHelper.authorize(request.context, DESCRIBE_CONFIGS, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendMaybeThrottle(request, listClientMetricsResourcesRequest.getErrorResponse(Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       val data = new ListClientMetricsResourcesResponseData().setClientMetricsResources(
         clientMetricsManager.listClientMetricsResources.stream.map(
           name => new ClientMetricsResource().setName(name)).collect(Collectors.toList()))
       requestHelper.sendMaybeThrottle(request, new ListClientMetricsResourcesResponse(data))
+      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def handleShareGroupHeartbeat(request: RequestChannel.Request): CompletableFuture[Unit] = {
@@ -3063,12 +3127,12 @@ class KafkaApis(val requestChannel: RequestChannel,
   /**
    * Handle a shareFetch request
    */
-  def handleShareFetchRequest(request: RequestChannel.Request): Unit = {
+  def handleShareFetchRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val shareFetchRequest = request.body[ShareFetchRequest]
 
     if (!isShareGroupProtocolEnabled) {
       requestHelper.sendMaybeThrottle(request, shareFetchRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.UNSUPPORTED_VERSION.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     val groupId = shareFetchRequest.data.groupId
@@ -3076,7 +3140,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     // Share Fetch needs permission to perform the READ action on the named group resource (groupId)
     if (!authHelper.authorize(request.context, READ, GROUP, groupId)) {
       requestHelper.sendMaybeThrottle(request, shareFetchRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.GROUP_AUTHORIZATION_FAILED.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     val memberId = shareFetchRequest.data.memberId
@@ -3103,7 +3167,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     } catch {
       case e: Exception =>
         requestHelper.sendMaybeThrottle(request, shareFetchRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, e))
-        return
+        return CompletableFuture.completedFuture[Unit](())
     }
 
     val erroneousAndValidPartitionData: ErroneousAndValidPartitionData = shareFetchContext.getErroneousAndValidTopicIdPartitions
@@ -3373,13 +3437,13 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleShareAcknowledgeRequest(request: RequestChannel.Request): Unit = {
+  def handleShareAcknowledgeRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val shareAcknowledgeRequest = request.body[ShareAcknowledgeRequest]
 
     if (!isShareGroupProtocolEnabled) {
       requestHelper.sendMaybeThrottle(request,
         shareAcknowledgeRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.UNSUPPORTED_VERSION.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     val groupId = shareAcknowledgeRequest.data.groupId
@@ -3388,7 +3452,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (!authHelper.authorize(request.context, READ, GROUP, groupId)) {
       requestHelper.sendMaybeThrottle(request,
         shareAcknowledgeRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.GROUP_AUTHORIZATION_FAILED.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     val memberId = shareAcknowledgeRequest.data.memberId
@@ -3401,7 +3465,7 @@ class KafkaApis(val requestChannel: RequestChannel,
     } catch {
       case e: Exception =>
         requestHelper.sendMaybeThrottle(request, shareAcknowledgeRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, e))
-        return
+        return CompletableFuture.completedFuture[Unit](())
     }
 
     val topicIdPartitionSeq: mutable.Set[TopicIdPartition] = mutable.Set()
@@ -3557,7 +3621,7 @@ class KafkaApis(val requestChannel: RequestChannel,
       }
   }
 
-  def handleDescribeShareGroupOffsetsRequest(request: RequestChannel.Request): Unit = {
+  def handleDescribeShareGroupOffsetsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val describeShareGroupOffsetsRequest = request.body[DescribeShareGroupOffsetsRequest]
     val groups = describeShareGroupOffsetsRequest.groups()
 
@@ -3670,23 +3734,23 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
   }
 
-  def handleAlterShareGroupOffsetsRequest(request: RequestChannel.Request): Unit = {
+  def handleAlterShareGroupOffsetsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val alterShareGroupOffsetsRequest = request.body[AlterShareGroupOffsetsRequest]
     requestHelper.sendMaybeThrottle(request, alterShareGroupOffsetsRequest.getErrorResponse(Errors.UNSUPPORTED_VERSION.exception))
     CompletableFuture.completedFuture[Unit](())
   }
 
-  def handleDeleteShareGroupOffsetsRequest(request: RequestChannel.Request): Unit = {
+  def handleDeleteShareGroupOffsetsRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val deleteShareGroupOffsetsRequest = request.body[DeleteShareGroupOffsetsRequest]
 
     val groupId = deleteShareGroupOffsetsRequest.data.groupId
 
     if (!isShareGroupProtocolEnabled) {
       requestHelper.sendMaybeThrottle(request, deleteShareGroupOffsetsRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.UNSUPPORTED_VERSION.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     } else if (!authHelper.authorize(request.context, DELETE, GROUP, groupId)) {
       requestHelper.sendMaybeThrottle(request, deleteShareGroupOffsetsRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, Errors.GROUP_AUTHORIZATION_FAILED.exception))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     val deleteShareGroupOffsetsResponseTopics: util.List[DeleteShareGroupOffsetsResponseTopic] = new util.ArrayList[DeleteShareGroupOffsetsResponseTopic]()
@@ -3713,7 +3777,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         new DeleteShareGroupOffsetsResponse(
           new DeleteShareGroupOffsetsResponseData()
             .setResponses(deleteShareGroupOffsetsResponseTopics)))
-      return
+      return CompletableFuture.completedFuture[Unit](())
     }
 
     groupCoordinator.deleteShareGroupOffsets(
