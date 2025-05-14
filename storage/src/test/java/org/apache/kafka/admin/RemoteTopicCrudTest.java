@@ -230,13 +230,12 @@ class RemoteTopicCrudTest {
 
         // 1. create a topic with `remote.log.copy.disable=true` and have different local.retention.ms and retention.ms value,
         //    it should fail to create the topic
-        var topicConfig = new HashMap<>(Map.of(
-            TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true",
-            TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true",
-            TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "100",
-            TopicConfig.RETENTION_MS_CONFIG, "1000",
-            TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "-2"
-        ));
+        Map<String, String> topicConfig = new HashMap<>();
+        topicConfig.put(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true");
+        topicConfig.put(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true");
+        topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "100");
+        topicConfig.put(TopicConfig.RETENTION_MS_CONFIG, "1000");
+        topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "-2");
 
         try (var admin = cluster.admin()) {
             // Test that creating topic with invalid config fails with appropriate error message
@@ -294,13 +293,12 @@ class RemoteTopicCrudTest {
 
         // 1. create a topic with `remote.log.copy.disable=true` and have different local.retention.bytes and retention.bytes value,
         //    it should fail to create the topic
-        var topicConfig = new HashMap<>(Map.of(
-            TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true",
-            TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true",
-            TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "100",
-            TopicConfig.RETENTION_BYTES_CONFIG, "1000",
-            TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "-2"
-        ));
+        Map<String, String> topicConfig = new HashMap<>();
+        topicConfig.put(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true");
+        topicConfig.put(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true");
+        topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "100");
+        topicConfig.put(TopicConfig.RETENTION_BYTES_CONFIG, "1000");
+        topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "-2");
 
         try (var admin = cluster.admin()) {
             var err = assertThrowsException(() -> admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
