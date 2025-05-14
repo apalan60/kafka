@@ -47,12 +47,13 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -188,29 +189,28 @@ class RemoteTopicCrudTest {
         }
     }
 
-    // `remote.log.delete.on.disable` and `remote.log.copy.disable` only works in KRaft mode.
     @ClusterTests({
         @ClusterTest(serverProperties = {
-            @ClusterConfigProperty(key = "remote.log.copy.disable", value = "true"),
-            @ClusterConfigProperty(key = "remote.log.delete.on.disable", value = "true")
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, value = "true"),
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, value = "true")
         }),
         @ClusterTest(serverProperties = {
-            @ClusterConfigProperty(key = "remote.log.copy.disable", value = "true"),
-            @ClusterConfigProperty(key = "remote.log.delete.on.disable", value = "false")
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, value = "true"),
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, value = "false")
         }),
         @ClusterTest(serverProperties = {
-            @ClusterConfigProperty(key = "remote.log.copy.disable", value = "false"),
-            @ClusterConfigProperty(key = "remote.log.delete.on.disable", value = "true")
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, value = "false"),
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, value = "true")
         }),
         @ClusterTest(serverProperties = {
-            @ClusterConfigProperty(key = "remote.log.copy.disable", value = "false"),
-            @ClusterConfigProperty(key = "remote.log.delete.on.disable", value = "false")
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, value = "false"),
+            @ClusterConfigProperty(key = TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, value = "false")
         })
     })
     void testCreateRemoteTopicWithCopyDisabledAndDeleteOnDisable() throws Exception {
         var topicConfig = Map.of(
-            TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, cluster.config().serverProperties().get("remote.log.copy.disable"),
-            TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, cluster.config().serverProperties().get("remote.log.delete.on.disable")
+            TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, cluster.config().serverProperties().get(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG),
+            TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, cluster.config().serverProperties().get(TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG)
         );
 
         try (var admin = cluster.admin()) {
@@ -221,7 +221,6 @@ class RemoteTopicCrudTest {
         verifyRemoteLogTopicConfigs(topicConfig);
     }
 
-    // `remote.log.delete.on.disable` only works in KRaft mode.
     @ClusterTest
     void testCreateTopicRetentionMsValidationWithRemoteCopyDisabled() throws Exception {
         var testTopicName2 = testTopicName + "2";
@@ -262,7 +261,7 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName3, numPartitions, numReplicationFactor).configs(topicConfig))).values().get(testTopicName3).get();
 
             // 5. alter the config to `remote.log.copy.disable=true`, it should fail the config change
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName3),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true"),
@@ -325,7 +324,7 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName3, numPartitions, numReplicationFactor).configs(topicConfig))).values().get(testTopicName3).get();
 
             // 5. alter the config to `remote.log.copy.disable=true`, it should fail the config change
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName3),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true"),
@@ -336,7 +335,7 @@ class RemoteTopicCrudTest {
 
             // 6. alter the config to `remote.log.copy.disable=true` and local.retention.bytes == retention.bytes, it should work without error
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName3),
-                java.util.Arrays.asList(
+                List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true"),
                         AlterConfigOp.OpType.SET),
                     new AlterConfigOp(new ConfigEntry(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "1000"),
@@ -352,9 +351,9 @@ class RemoteTopicCrudTest {
             var topicConfig = new HashMap<String, String>();
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(new HashMap<>()))).all().get();
 
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
-                Collections.singleton(new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"), AlterConfigOp.OpType.SET))
+                Set.of(new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"), AlterConfigOp.OpType.SET))
             );
             admin.incrementalAlterConfigs(configs).all().get();
             verifyRemoteLogTopicConfigs(topicConfig);
@@ -376,9 +375,9 @@ class RemoteTopicCrudTest {
 
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor))).all().get();
 
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
-                Collections.singleton(
+                Set.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"),
                         AlterConfigOp.OpType.SET))
             );
@@ -397,7 +396,7 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor)
                 .configs(topicConfig))).all().get();
 
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_MS_CONFIG, "200"),
@@ -420,9 +419,9 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor)
                 .configs(topicConfig))).all().get();
                 
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
-                java.util.Arrays.asList(
+                List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_BYTES_CONFIG, "200"),
                         AlterConfigOp.OpType.SET),
                     new AlterConfigOp(new ConfigEntry(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "100"),
@@ -444,7 +443,7 @@ class RemoteTopicCrudTest {
                 .configs(topicConfig))).all().get(); 
             
             // inherited local retention ms is 1000
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_MS_CONFIG, "200"),
@@ -467,7 +466,7 @@ class RemoteTopicCrudTest {
                 .configs(topicConfig))).all().get();
 
             // inherited local retention bytes is 1024
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_BYTES_CONFIG, "512"),
@@ -491,7 +490,7 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor)
                 .configs(topicConfig))).all().get();
             
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
                 List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "false"),
@@ -516,9 +515,9 @@ class RemoteTopicCrudTest {
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor)
                 .configs(topicConfig))).all().get();
 
-            var configs = new java.util.HashMap<ConfigResource, java.util.Collection<AlterConfigOp>>();
+            var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
-                java.util.Arrays.asList(
+                List.of(
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "false"),
                         AlterConfigOp.OpType.SET),
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, "true"),
@@ -676,7 +675,7 @@ class RemoteTopicCrudTest {
                 var timestamp = time.milliseconds();
                 long startOffset = idx * RECORDS_PER_SEGMENT;
                 var endOffset = startOffset + RECORDS_PER_SEGMENT - 1;
-                var segmentLeaderEpochs = Collections.singletonMap(0, 0L);
+                var segmentLeaderEpochs = Map.of(0, 0L);
                 var segmentId = new RemoteLogSegmentId(topicIdPartition, Uuid.randomUuid());
                 var metadata = new RemoteLogSegmentMetadata(
                     segmentId,
