@@ -477,7 +477,6 @@ class RemoteTopicCrudTest {
         }
     }
 
-    // The remote storage config validation on controller level only works in KRaft
     @ClusterTest
     void testUpdateTopicConfigWithDisablingRemoteStorage() throws Exception {
         try (var admin = cluster.admin()) {
