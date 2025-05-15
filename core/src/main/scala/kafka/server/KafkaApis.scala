@@ -393,7 +393,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         authHelper.authorize(request.context, WRITE, TRANSACTIONAL_ID, produceRequest.transactionalId)
       if (!isAuthorizedTransactional) {
         requestHelper.sendErrorResponseMaybeThrottle(request, Errors.TRANSACTIONAL_ID_AUTHORIZATION_FAILED.exception)
-        CompletableFuture.completedFuture[Unit](())
+        return CompletableFuture.completedFuture[Unit](())
       }
     }
 
@@ -1399,8 +1399,10 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (!syncGroupRequest.areMandatoryProtocolTypeAndNamePresent()) {
       // Starting from version 5, ProtocolType and ProtocolName fields are mandatory.
       requestHelper.sendMaybeThrottle(request, syncGroupRequest.getErrorResponse(Errors.INCONSISTENT_GROUP_PROTOCOL.exception))
+      CompletableFuture.completedFuture[Unit](())
     } else if (!authHelper.authorize(request.context, READ, GROUP, syncGroupRequest.data.groupId)) {
       requestHelper.sendMaybeThrottle(request, syncGroupRequest.getErrorResponse(Errors.GROUP_AUTHORIZATION_FAILED.exception))
+      CompletableFuture.completedFuture[Unit](())
     } else {
       groupCoordinator.syncGroup(
         request.context,
@@ -1414,7 +1416,6 @@ class KafkaApis(val requestChannel: RequestChannel,
         }
       }
     }
-    CompletableFuture.completedFuture[Unit](())
   }
 
   def handleDeleteGroupsRequest(
