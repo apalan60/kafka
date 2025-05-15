@@ -172,9 +172,9 @@ class DynamicBrokerConfigTest {
   def testUpdateRemoteLogManagerDynamicThreadPool(): Unit = {
     val origProps = TestUtils.createBrokerConfig(0, port = 8181)
     val config = KafkaConfig(origProps)
-    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_COPIER_THREAD_POOL_SIZE, config.remoteLogManagerConfig.remoteLogManagerCopierThreadPoolSize())
-    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_EXPIRATION_THREAD_POOL_SIZE, config.remoteLogManagerConfig.remoteLogManagerExpirationThreadPoolSize())
-    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_READER_THREADS, config.remoteLogManagerConfig.remoteLogReaderThreads())
+    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_COPIER_THREAD_POOL_SIZE, new RemoteLogManagerConfig(config).remoteLogManagerCopierThreadPoolSize())
+    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_EXPIRATION_THREAD_POOL_SIZE, new RemoteLogManagerConfig(config).remoteLogManagerExpirationThreadPoolSize())
+    assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_READER_THREADS, new RemoteLogManagerConfig(config).remoteLogReaderThreads())
 
     val serverMock = mock(classOf[KafkaBroker])
     val remoteLogManager = mock(classOf[RemoteLogManager])
@@ -189,19 +189,19 @@ class DynamicBrokerConfigTest {
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_COPIER_THREAD_POOL_SIZE_PROP, "8")
     config.dynamicConfig.validate(props, perBrokerConfig = true)
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(8, config.remoteLogManagerConfig.remoteLogManagerCopierThreadPoolSize())
+    assertEquals(8, new RemoteLogManagerConfig(config).remoteLogManagerCopierThreadPoolSize())
     verify(remoteLogManager).resizeCopierThreadPool(8)
 
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_EXPIRATION_THREAD_POOL_SIZE_PROP, "7")
     config.dynamicConfig.validate(props, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(7, config.remoteLogManagerConfig.remoteLogManagerExpirationThreadPoolSize())
+    assertEquals(7, new RemoteLogManagerConfig(config).remoteLogManagerExpirationThreadPoolSize())
     verify(remoteLogManager).resizeExpirationThreadPool(7)
 
     props.put(RemoteLogManagerConfig.REMOTE_LOG_READER_THREADS_PROP, "6")
     config.dynamicConfig.validate(props, perBrokerConfig = true)
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(6, config.remoteLogManagerConfig.remoteLogReaderThreads())
+    assertEquals(6, new RemoteLogManagerConfig(config).remoteLogReaderThreads())
     verify(remoteLogManager).resizeReaderThreadPool(6)
     props.clear()
     verifyNoMoreInteractions(remoteLogManager)
@@ -694,13 +694,13 @@ class DynamicBrokerConfigTest {
     // update default config
     config.dynamicConfig.validate(newProps, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(newProps)
-    assertEquals(2160000000L, config.remoteLogManagerConfig.logLocalRetentionMs)
+    assertEquals(2160000000L, new RemoteLogManagerConfig(config).logLocalRetentionMs)
 
     // update per broker config
     config.dynamicConfig.validate(newProps, perBrokerConfig = true)
     newProps.put(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_MS_PROP, "2150000000")
     config.dynamicConfig.updateBrokerConfig(0, newProps)
-    assertEquals(2150000000L, config.remoteLogManagerConfig.logLocalRetentionMs)
+    assertEquals(2150000000L, new RemoteLogManagerConfig(config).logLocalRetentionMs)
   }
 
   @Test
@@ -717,13 +717,13 @@ class DynamicBrokerConfigTest {
     // update default config
     config.dynamicConfig.validate(newProps, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(newProps)
-    assertEquals(4294967295L, config.remoteLogManagerConfig.logLocalRetentionBytes)
+    assertEquals(4294967295L, new RemoteLogManagerConfig(config).logLocalRetentionBytes)
 
     // update per broker config
     config.dynamicConfig.validate(newProps, perBrokerConfig = true)
     newProps.put(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP, "4294967294")
     config.dynamicConfig.updateBrokerConfig(0, newProps)
-    assertEquals(4294967294L, config.remoteLogManagerConfig.logLocalRetentionBytes)
+    assertEquals(4294967294L, new RemoteLogManagerConfig(config).logLocalRetentionBytes)
   }
 
   @Test
@@ -759,7 +759,7 @@ class DynamicBrokerConfigTest {
     val kafkaBroker = mock(classOf[KafkaBroker])
     when(kafkaBroker.config).thenReturn(config)
     when(kafkaBroker.remoteLogManagerOpt).thenReturn(None)
-    assertEquals(500, config.remoteLogManagerConfig.remoteFetchMaxWaitMs)
+    assertEquals(500, new RemoteLogManagerConfig(config).remoteFetchMaxWaitMs)
 
     val dynamicRemoteLogConfig = new DynamicRemoteLogConfig(kafkaBroker)
     config.dynamicConfig.initialize(None)
@@ -770,13 +770,13 @@ class DynamicBrokerConfigTest {
     // update default config
     config.dynamicConfig.validate(newProps, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(newProps)
-    assertEquals(30000, config.remoteLogManagerConfig.remoteFetchMaxWaitMs)
+    assertEquals(30000, new RemoteLogManagerConfig(config).remoteFetchMaxWaitMs)
 
     // update per broker config
     newProps.put(RemoteLogManagerConfig.REMOTE_FETCH_MAX_WAIT_MS_PROP, "10000")
     config.dynamicConfig.validate(newProps, perBrokerConfig = true)
     config.dynamicConfig.updateBrokerConfig(0, newProps)
-    assertEquals(10000, config.remoteLogManagerConfig.remoteFetchMaxWaitMs)
+    assertEquals(10000, new RemoteLogManagerConfig(config).remoteFetchMaxWaitMs)
 
     // invalid values
     for (maxWaitMs <- Seq(-1, 0)) {
@@ -794,7 +794,7 @@ class DynamicBrokerConfigTest {
     when(kafkaBroker.config).thenReturn(config)
     when(kafkaBroker.remoteLogManagerOpt).thenReturn(None)
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS,
-      config.remoteLogManagerConfig.remoteListOffsetsRequestTimeoutMs)
+      new RemoteLogManagerConfig(config).remoteListOffsetsRequestTimeoutMs)
 
     val dynamicRemoteLogConfig = new DynamicRemoteLogConfig(kafkaBroker)
     config.dynamicConfig.initialize(None)
@@ -805,13 +805,13 @@ class DynamicBrokerConfigTest {
     // update default config
     config.dynamicConfig.validate(newProps, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(newProps)
-    assertEquals(60000L, config.remoteLogManagerConfig.remoteListOffsetsRequestTimeoutMs)
+    assertEquals(60000L, new RemoteLogManagerConfig(config).remoteListOffsetsRequestTimeoutMs)
 
     // update per broker config
     newProps.put(RemoteLogManagerConfig.REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_PROP, "10000")
     config.dynamicConfig.validate(newProps, perBrokerConfig = true)
     config.dynamicConfig.updateBrokerConfig(0, newProps)
-    assertEquals(10000L, config.remoteLogManagerConfig.remoteListOffsetsRequestTimeoutMs)
+    assertEquals(10000L, new RemoteLogManagerConfig(config).remoteListOffsetsRequestTimeoutMs)
 
     // invalid values
     for (timeoutMs <- Seq(-1, 0)) {
@@ -840,7 +840,7 @@ class DynamicBrokerConfigTest {
 
     props.put(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, "4")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(4L, config.remoteLogManagerConfig.remoteLogIndexFileCacheTotalSizeBytes())
+    assertEquals(4L, new RemoteLogManagerConfig(config).remoteLogIndexFileCacheTotalSizeBytes())
     Mockito.verify(remoteLogManager).resizeCacheSize(4)
 
     Mockito.verifyNoMoreInteractions(remoteLogManager)
@@ -860,18 +860,18 @@ class DynamicBrokerConfigTest {
     config.dynamicConfig.addBrokerReconfigurable(new DynamicRemoteLogConfig(serverMock))
 
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND,
-      config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
+      new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
 
     // Update default config
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND_PROP, "100")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(100, config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
+    assertEquals(100, new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
     verify(remoteLogManager).updateCopyQuota(100)
 
     // Update per broker config
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND_PROP, "200")
     config.dynamicConfig.updateBrokerConfig(0, props)
-    assertEquals(200, config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
+    assertEquals(200, new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
     verify(remoteLogManager).updateCopyQuota(200)
 
     verifyNoMoreInteractions(remoteLogManager)
@@ -891,18 +891,18 @@ class DynamicBrokerConfigTest {
     config.dynamicConfig.addBrokerReconfigurable(new DynamicRemoteLogConfig(serverMock))
 
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND,
-      config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+      new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
 
     // Update default config
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND_PROP, "100")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(100, config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+    assertEquals(100, new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
     verify(remoteLogManager).updateFetchQuota(100)
 
     // Update per broker config
     props.put(RemoteLogManagerConfig.REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND_PROP, "200")
     config.dynamicConfig.updateBrokerConfig(0, props)
-    assertEquals(200, config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+    assertEquals(200, new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
     verify(remoteLogManager).updateFetchQuota(200)
 
     verifyNoMoreInteractions(remoteLogManager)
@@ -927,20 +927,20 @@ class DynamicBrokerConfigTest {
 
     // Default values
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES,
-      config.remoteLogManagerConfig.remoteLogIndexFileCacheTotalSizeBytes())
+      new RemoteLogManagerConfig(config).remoteLogIndexFileCacheTotalSizeBytes())
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND,
-      config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
+      new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
     assertEquals(RemoteLogManagerConfig.DEFAULT_REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND,
-      config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+      new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
 
     // Update default config
     props.put(indexFileCacheSizeProp, "4")
     props.put(copyQuotaProp, "100")
     props.put(fetchQuotaProp, "200")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(4, config.remoteLogManagerConfig.remoteLogIndexFileCacheTotalSizeBytes())
-    assertEquals(100, config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
-    assertEquals(200, config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+    assertEquals(4, new RemoteLogManagerConfig(config).remoteLogIndexFileCacheTotalSizeBytes())
+    assertEquals(100, new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
+    assertEquals(200, new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
     verify(remoteLogManager).resizeCacheSize(4)
     verify(remoteLogManager).updateCopyQuota(100)
     verify(remoteLogManager).updateFetchQuota(200)
@@ -950,9 +950,9 @@ class DynamicBrokerConfigTest {
     props.put(copyQuotaProp, "200")
     props.put(fetchQuotaProp, "400")
     config.dynamicConfig.updateBrokerConfig(0, props)
-    assertEquals(8, config.remoteLogManagerConfig.remoteLogIndexFileCacheTotalSizeBytes())
-    assertEquals(200, config.remoteLogManagerConfig.remoteLogManagerCopyMaxBytesPerSecond())
-    assertEquals(400, config.remoteLogManagerConfig.remoteLogManagerFetchMaxBytesPerSecond())
+    assertEquals(8, new RemoteLogManagerConfig(config).remoteLogIndexFileCacheTotalSizeBytes())
+    assertEquals(200, new RemoteLogManagerConfig(config).remoteLogManagerCopyMaxBytesPerSecond())
+    assertEquals(400, new RemoteLogManagerConfig(config).remoteLogManagerFetchMaxBytesPerSecond())
     verify(remoteLogManager).resizeCacheSize(8)
     verify(remoteLogManager).updateCopyQuota(200)
     verify(remoteLogManager).updateFetchQuota(400)

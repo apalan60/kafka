@@ -37,6 +37,7 @@ import scala.util.{Failure, Success, Try}
 import org.apache.kafka.image.TopicsImage
 import org.apache.kafka.metadata.ConfigRepository
 import org.apache.kafka.metadata.properties.{MetaProperties, MetaPropertiesEnsemble, PropertiesUtils}
+import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig
 
 import java.util.{Collections, Optional, OptionalLong, Properties}
 import org.apache.kafka.server.metrics.KafkaMetricsGroup
@@ -1530,7 +1531,8 @@ object LogManager {
             logDirFailureChannel: LogDirFailureChannel): LogManager = {
     val defaultProps = config.extractLogConfigMap
 
-    LogConfig.validateBrokerLogConfigValues(defaultProps, config.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    val remoteStorageSystemEnabled = new RemoteLogManagerConfig(config).isRemoteStorageSystemEnabled
+    LogConfig.validateBrokerLogConfigValues(defaultProps, remoteStorageSystemEnabled)
     val defaultLogConfig = new LogConfig(defaultProps)
 
     val cleanerConfig = new CleanerConfig(config)
@@ -1553,7 +1555,7 @@ object LogManager {
       brokerTopicStats = brokerTopicStats,
       logDirFailureChannel = logDirFailureChannel,
       time = time,
-      remoteStorageSystemEnable = config.remoteLogManagerConfig.isRemoteStorageSystemEnabled,
+      remoteStorageSystemEnable = remoteStorageSystemEnabled,
       initialTaskDelayMs = config.logInitialTaskDelayMs)
   }
 }

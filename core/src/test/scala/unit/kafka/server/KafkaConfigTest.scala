@@ -1060,7 +1060,8 @@ class KafkaConfigTest {
     val props = baseProperties
     props.put(RemoteLogManagerConfig.REMOTE_LOG_STORAGE_SYSTEM_ENABLE_PROP, "true")
     val config = KafkaConfig.fromProps(props)
-
+    val remoteLogManagerConfig = new RemoteLogManagerConfig(config)
+    
     def assertDynamic(property: String, value: Any, accessor: () => Any): Unit = {
       val initial = accessor()
       props.setProperty(property, value.toString)
@@ -1127,9 +1128,9 @@ class KafkaConfigTest {
         case TopicConfig.UNCLEAN_LEADER_ELECTION_ENABLE_CONFIG =>
           assertDynamic(kafkaConfigProp, true, () => config.uncleanLeaderElectionEnable)
         case TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG =>
-          assertDynamic(kafkaConfigProp, 10015L, () => config.remoteLogManagerConfig.logLocalRetentionMs)
+          assertDynamic(kafkaConfigProp, 10015L, () => remoteLogManagerConfig.logLocalRetentionMs)
         case TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG =>
-          assertDynamic(kafkaConfigProp, 10016L, () => config.remoteLogManagerConfig.logLocalRetentionBytes)
+          assertDynamic(kafkaConfigProp, 10016L, () => remoteLogManagerConfig.logLocalRetentionBytes)
         // not dynamically updatable
         case QuotaConfig.FOLLOWER_REPLICATION_THROTTLED_REPLICAS_CONFIG =>
         // topic only config

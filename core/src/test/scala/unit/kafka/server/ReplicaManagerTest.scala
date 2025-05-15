@@ -3285,7 +3285,7 @@ class ReplicaManagerTest {
     when(mockLog.config).thenReturn(logConfig)
     when(mockLog.remoteLogEnabled()).thenReturn(enableRemoteStorage)
     val aliveBrokers = aliveBrokerIds.map(brokerId => new Node(brokerId, s"host$brokerId", brokerId))
-    brokerTopicStats = new BrokerTopicStats(KafkaConfig.fromProps(props).remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    brokerTopicStats = new BrokerTopicStats(new RemoteLogManagerConfig(KafkaConfig.fromProps(props)).isRemoteStorageSystemEnabled)
 
     val metadataCache: MetadataCache = mock(classOf[MetadataCache])
     when(metadataCache.topicIdsToNames()).thenReturn(topicNames.asJava)
@@ -3794,10 +3794,11 @@ class ReplicaManagerTest {
     // set log reader threads number to 2
     props.put(RemoteLogManagerConfig.REMOTE_LOG_READER_THREADS_PROP, 2.toString)
     val config = KafkaConfig.fromProps(props)
+    val remoteLogManagerConfig = new RemoteLogManagerConfig(config)
     val mockLog = mock(classOf[UnifiedLog])
-    val brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    val brokerTopicStats = new BrokerTopicStats(remoteLogManagerConfig.isRemoteStorageSystemEnabled)
     val remoteLogManager = new RemoteLogManager(
-      config.remoteLogManagerConfig,
+      remoteLogManagerConfig, 
       0,
       TestUtils.tempRelativeDir("data").getAbsolutePath,
       "clusterId",
@@ -3905,10 +3906,11 @@ class ReplicaManagerTest {
     props.put(RemoteLogManagerConfig.REMOTE_STORAGE_MANAGER_CLASS_NAME_PROP, classOf[NoOpRemoteStorageManager].getName)
     props.put(RemoteLogManagerConfig.REMOTE_LOG_METADATA_MANAGER_CLASS_NAME_PROP, classOf[NoOpRemoteLogMetadataManager].getName)
     val config = KafkaConfig.fromProps(props)
+    val remoteLogManagerConfig = new RemoteLogManagerConfig(config)
     val dummyLog = mock(classOf[UnifiedLog])
-    val brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    val brokerTopicStats = new BrokerTopicStats(remoteLogManagerConfig.isRemoteStorageSystemEnabled)
     val remoteLogManager = new RemoteLogManager(
-      config.remoteLogManagerConfig,
+      remoteLogManagerConfig,
       0,
       TestUtils.tempRelativeDir("data").getAbsolutePath,
       "clusterId",

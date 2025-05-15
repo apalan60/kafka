@@ -663,7 +663,7 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
 
     def validateLogLocalRetentionMs(): Unit = {
       val logRetentionMs = newConfig.logRetentionTimeMillis
-      val logLocalRetentionMs: java.lang.Long = newConfig.remoteLogManagerConfig.logLocalRetentionMs
+      val logLocalRetentionMs: java.lang.Long = new RemoteLogManagerConfig(newConfig).logLocalRetentionMs
       if (logRetentionMs != -1L && logLocalRetentionMs != -2L) {
         if (logLocalRetentionMs == -1L) {
           throw new ConfigException(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_MS_PROP, logLocalRetentionMs,
@@ -678,7 +678,7 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
 
     def validateLogLocalRetentionBytes(): Unit = {
       val logRetentionBytes = newConfig.logRetentionBytes
-      val logLocalRetentionBytes: java.lang.Long = newConfig.remoteLogManagerConfig.logLocalRetentionBytes
+      val logLocalRetentionBytes: java.lang.Long = new RemoteLogManagerConfig(newConfig).logLocalRetentionBytes
       if (logRetentionBytes > -1 && logLocalRetentionBytes != -2) {
         if (logLocalRetentionBytes == -1) {
           throw new ConfigException(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP, logLocalRetentionBytes,
@@ -1075,8 +1075,8 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
           s"old value: $oldValue, new value: $newValue")
       }
 
-      val newRLMConfig = newConfig.remoteLogManagerConfig
-      val oldRLMConfig = oldConfig.remoteLogManagerConfig
+      val newRLMConfig = new RemoteLogManagerConfig(newConfig)
+      val oldRLMConfig = new RemoteLogManagerConfig(oldConfig)
       if (newRLMConfig.remoteLogManagerCopierThreadPoolSize() != oldRLMConfig.remoteLogManagerCopierThreadPoolSize())
         remoteLogManager.resizeCopierThreadPool(newRLMConfig.remoteLogManagerCopierThreadPoolSize())
 
