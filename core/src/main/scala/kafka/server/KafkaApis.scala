@@ -278,7 +278,6 @@ class KafkaApis(val requestChannel: RequestChannel,
     // Reject the request if not authorized to the group.
     if (!authHelper.authorize(request.context, READ, GROUP, offsetCommitRequest.data.groupId)) {
       requestHelper.sendMaybeThrottle(request, offsetCommitRequest.getErrorResponse(Errors.GROUP_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       val useTopicIds = OffsetCommitResponse.useTopicIds(request.header.apiVersion)
 
@@ -363,6 +362,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         }
       }
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   case class LeaderNode(leaderId: Int, leaderEpoch: Int, node: Option[Node])
@@ -528,7 +528,6 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (authorizedRequestInfo.isEmpty) {
       sendResponseCallback(Map.empty)
-      CompletableFuture.completedFuture[Unit](())
     }
     else {
       val internalTopicsAllowed = request.header.clientId == "__admin_client"
@@ -548,8 +547,8 @@ class KafkaApis(val requestChannel: RequestChannel,
       // if the request is put into the purgatory, it will have a held reference and hence cannot be garbage collected;
       // hence we clear its data here in order to let GC reclaim its memory since it is already appended to log
       produceRequest.clearPartitionRecords()
-      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   /**
@@ -726,7 +725,6 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (interesting.isEmpty) {
       processResponseCallback(Seq.empty)
-      CompletableFuture.completedFuture[Unit](())
     } else {
       // for fetch from consumer, cap fetchMaxBytes to the maximum bytes that could be fetched without being throttled given
       // no bytes were recorded in the recent quota window
@@ -768,7 +766,6 @@ class KafkaApis(val requestChannel: RequestChannel,
         quota = replicationQuota(fetchRequest),
         responseCallback = processResponseCallback,
       )
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -812,13 +809,12 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (authorizedRequestInfo.isEmpty) {
       sendResponseCallback(util.List.of)
-      CompletableFuture.completedFuture[Unit](())
     } else {
       replicaManager.fetchOffset(authorizedRequestInfo, offsetRequest.duplicatePartitions().asScala,
         offsetRequest.isolationLevel(), offsetRequest.replicaId(), clientId, correlationId, version,
         buildErrorResponse, sendResponseCallback, offsetRequest.timeoutMs())
-      CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def metadataResponseTopic(error: Errors,
@@ -1184,10 +1180,8 @@ class KafkaApis(val requestChannel: RequestChannel,
     val version = request.header.apiVersion
     if (version < 4) {
       handleFindCoordinatorRequestLessThanV4(request)
-      CompletableFuture.completedFuture[Unit](())
     } else {
       handleFindCoordinatorRequestV4AndAbove(request)
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -1405,10 +1399,8 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (!syncGroupRequest.areMandatoryProtocolTypeAndNamePresent()) {
       // Starting from version 5, ProtocolType and ProtocolName fields are mandatory.
       requestHelper.sendMaybeThrottle(request, syncGroupRequest.getErrorResponse(Errors.INCONSISTENT_GROUP_PROTOCOL.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else if (!authHelper.authorize(request.context, READ, GROUP, syncGroupRequest.data.groupId)) {
       requestHelper.sendMaybeThrottle(request, syncGroupRequest.getErrorResponse(Errors.GROUP_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       groupCoordinator.syncGroup(
         request.context,
@@ -1422,6 +1414,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         }
       }
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def handleDeleteGroupsRequest(
@@ -1599,7 +1592,6 @@ class KafkaApis(val requestChannel: RequestChannel,
         deleteRecordsRequest.data.timeoutMs.toLong,
         authorizedForDeleteTopicOffsets,
         sendResponseCallback)
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -1665,7 +1657,6 @@ class KafkaApis(val requestChannel: RequestChannel,
             sendResponseCallback,
             requestLocal
         )
-        CompletableFuture.completedFuture[Unit](())
       case Left(error) => requestHelper.sendErrorResponseMaybeThrottle(request, error.exception)
     }
     CompletableFuture.completedFuture[Unit](())
@@ -1706,7 +1697,6 @@ class KafkaApis(val requestChannel: RequestChannel,
         TransactionVersion.transactionVersionForEndTxn(endTxnRequest),
         sendResponseCallback,
         requestLocal)
-      CompletableFuture.completedFuture[Unit](())
     } else
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new EndTxnResponse(new EndTxnResponseData()
@@ -2017,7 +2007,6 @@ class KafkaApis(val requestChannel: RequestChannel,
         sendResponseCallback,
         TransactionVersion.TV_0, // This request will always come from the client not using TV 2.
         requestLocal)
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2180,12 +2169,10 @@ class KafkaApis(val requestChannel: RequestChannel,
     }
     if (remaining.resources().isEmpty) {
       sendResponse(Some(new AlterConfigsResponseData()))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardingManager.forwardRequest(request,
         new AlterConfigsRequest(remaining, request.header.apiVersion()),
         response => sendResponse(response.map(_.data())))
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2210,12 +2197,10 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (remaining.resources().isEmpty) {
       sendResponse(Some(new IncrementalAlterConfigsResponseData()))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       forwardingManager.forwardRequest(request,
         new IncrementalAlterConfigsRequest(remaining, request.header.apiVersion()),
         response => sendResponse(response.map(_.data())))
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2243,11 +2228,9 @@ class KafkaApis(val requestChannel: RequestChannel,
               }.toList.asJava)
           }.toList.asJava)
           .setThrottleTimeMs(requestThrottleMs)))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         alterReplicaDirsRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2357,7 +2340,6 @@ class KafkaApis(val requestChannel: RequestChannel,
 
       if (describeTokenRequest.ownersListEmpty()) {
         sendResponseCallback(Errors.NONE, Collections.emptyList)
-        CompletableFuture.completedFuture[Unit](())
       } else {
         val owners: Optional[util.List[KafkaPrincipal]] = if (describeTokenRequest.data.owners == null)
           Optional.empty()
@@ -2369,9 +2351,7 @@ class KafkaApis(val requestChannel: RequestChannel,
           .filterToken(requestPrincipal, owners, token, authorizeToken, authorizeRequester)
         val tokens =  tokenManager.getTokens(eligible)
         sendResponseCallback(Errors.NONE, tokens)
-        CompletableFuture.completedFuture[Unit](())
       }
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2459,14 +2439,12 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (!authHelper.authorize(request.context, DESCRIBE_CONFIGS, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         describeClientQuotasRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       val result = metadataCache.describeClientQuotas(describeClientQuotasRequest.data())
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs => {
         result.setThrottleTimeMs(requestThrottleMs)
         new DescribeClientQuotasResponse(result)
       })
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2477,12 +2455,10 @@ class KafkaApis(val requestChannel: RequestChannel,
     if (!authHelper.authorize(request.context, DESCRIBE, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         describeUserScramCredentialsRequest.getErrorResponse(requestThrottleMs, Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       val result = metadataCache.describeScramCredentials(describeUserScramCredentialsRequest.data())
       requestHelper.sendResponseMaybeThrottle(request, requestThrottleMs =>
         new DescribeUserScramCredentialsResponse(result.setThrottleTimeMs(requestThrottleMs)))
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -2968,24 +2944,22 @@ class KafkaApis(val requestChannel: RequestChannel,
     val subscriptionRequest = request.body[GetTelemetrySubscriptionsRequest]
     try {
       requestHelper.sendMaybeThrottle(request, clientMetricsManager.processGetTelemetrySubscriptionRequest(subscriptionRequest, request.context))
-      CompletableFuture.completedFuture[Unit](())
     } catch {
       case _: Exception =>
         requestHelper.sendMaybeThrottle(request, subscriptionRequest.getErrorResponse(Errors.INVALID_REQUEST.exception))
-        CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   private def handlePushTelemetryRequest(request: RequestChannel.Request): CompletableFuture[Unit] = {
     val pushTelemetryRequest = request.body[PushTelemetryRequest]
     try {
       requestHelper.sendMaybeThrottle(request, clientMetricsManager.processPushTelemetryRequest(pushTelemetryRequest, request.context))
-      CompletableFuture.completedFuture[Unit](())
     } catch {
       case _: Exception =>
         requestHelper.sendMaybeThrottle(request, pushTelemetryRequest.getErrorResponse(Errors.INVALID_REQUEST.exception))
-        CompletableFuture.completedFuture[Unit](())
     }
+    CompletableFuture.completedFuture[Unit](())
   }
 
   def handleListClientMetricsResources(request: RequestChannel.Request): CompletableFuture[Unit] = {
@@ -2993,13 +2967,11 @@ class KafkaApis(val requestChannel: RequestChannel,
 
     if (!authHelper.authorize(request.context, DESCRIBE_CONFIGS, CLUSTER, CLUSTER_NAME)) {
       requestHelper.sendMaybeThrottle(request, listClientMetricsResourcesRequest.getErrorResponse(Errors.CLUSTER_AUTHORIZATION_FAILED.exception))
-      CompletableFuture.completedFuture[Unit](())
     } else {
       val data = new ListClientMetricsResourcesResponseData().setClientMetricsResources(
         clientMetricsManager.listClientMetricsResources.stream.map(
           name => new ClientMetricsResource().setName(name)).collect(Collectors.toList()))
       requestHelper.sendMaybeThrottle(request, new ListClientMetricsResourcesResponse(data))
-      CompletableFuture.completedFuture[Unit](())
     }
     CompletableFuture.completedFuture[Unit](())
   }
@@ -3176,7 +3148,7 @@ class KafkaApis(val requestChannel: RequestChannel,
             }
           }
         )
-        return
+        return CompletableFuture.completedFuture[Unit](())
       case e: Exception =>
         requestHelper.sendMaybeThrottle(request, shareFetchRequest.getErrorResponse(AbstractResponse.DEFAULT_THROTTLE_TIME, e))
         return CompletableFuture.completedFuture[Unit](())
