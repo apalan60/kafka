@@ -346,15 +346,14 @@ class RemoteTopicCrudTest {
     @ClusterTest
     void testEnableRemoteLogOnExistingTopic() throws Exception {
         try (var admin = cluster.admin()) {
-            var topicConfig = new HashMap<String, String>();
-            admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(new HashMap<>()))).all().get();
+            admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(Map.of()))).all().get();
 
             var configs = new HashMap<ConfigResource, Collection<AlterConfigOp>>();
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName),
                 Set.of(new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"), AlterConfigOp.OpType.SET))
             );
             admin.incrementalAlterConfigs(configs).all().get();
-            verifyRemoteLogTopicConfigs(topicConfig);
+            verifyRemoteLogTopicConfigs(Map.of());
         }
     }
 
