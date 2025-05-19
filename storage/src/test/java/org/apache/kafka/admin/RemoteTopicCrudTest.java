@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,7 +94,7 @@ class RemoteTopicCrudTest {
     @BeforeEach
     void setUp(TestInfo info) {
         var methodName = info.getTestMethod().orElseThrow().getName();
-        testTopicName = methodName + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 3);
+        testTopicName = methodName + "-" + TestUtils.randomString(3);
     }
 
     @ClusterTest
