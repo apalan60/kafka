@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(value = 3)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.All)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Threads(2)
 public class EnumMapVsHashMapBenchmark {
