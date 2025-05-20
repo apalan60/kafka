@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 @Threads(2)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@BenchmarkMode(Mode.All)
+@BenchmarkMode(Mode.SampleTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class EnumMapVsHashMapBenchmark {
     @Param({"2", "8", "16", "32", "64", "128"})
@@ -68,7 +68,6 @@ public class EnumMapVsHashMapBenchmark {
     /* =============== put workload =============== */
 
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public void putEnumMap(Blackhole bh) {
         EnumMap<Errors, Integer> map = new EnumMap<>(Errors.class);
         for (int i = 0; i < entries; i++) {
@@ -79,7 +78,6 @@ public class EnumMapVsHashMapBenchmark {
     }
 
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public void putHashMap(Blackhole bh) {
         HashMap<Errors, Integer> map = new HashMap<>(entries * 2, 0.75f);
         for (int i = 0; i < entries; i++) {
