@@ -163,6 +163,8 @@
         <allow pkg="org.apache.kafka.common.config" />
         <allow pkg="org.apache.kafka.server.log.remote.storage" />
         <allow pkg="scala.jdk.javaapi" />
+        <allow pkg="org.apache.kafka.test" />
+
     </subpackage>
     
 </import-control>

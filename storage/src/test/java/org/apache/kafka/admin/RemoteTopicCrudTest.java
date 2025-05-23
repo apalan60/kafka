@@ -44,7 +44,6 @@ import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.function.Executable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,6 +51,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -60,9 +60,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import scala.jdk.javaapi.OptionConverters;
 
+import static org.apache.kafka.test.TestUtils.assertFutureThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -158,7 +158,7 @@ class RemoteTopicCrudTest {
         );
 
         try (var admin = cluster.admin()) {
-            assertThrowsExceptionIgnoringResult(() -> admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
+            assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
         }
     }
 
@@ -171,7 +171,7 @@ class RemoteTopicCrudTest {
         );
 
         try (var admin = cluster.admin()) {
-            assertThrowsExceptionIgnoringResult(() -> admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
+            assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
         }
     }
    
@@ -183,8 +183,7 @@ class RemoteTopicCrudTest {
         );
 
         try (var admin = cluster.admin()) {
-            assertThrowsExceptionIgnoringResult(() -> admin.createTopics(
-                List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
+            assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
         }
     }
 
@@ -238,8 +237,8 @@ class RemoteTopicCrudTest {
 
         try (var admin = cluster.admin()) {
             // Test that creating topic with invalid config fails with appropriate error message
-            var err = assertThrowsException(() -> admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
-            assertEquals(errorMsgMs, err.getMessage());
+            var err = assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
+            assertEquals(errorMsgMs, Objects.requireNonNull(err).getMessage());
 
             // 2. change the local.retention.ms value to the same value as retention.ms should successfully create the topic
             topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "1000");
@@ -265,9 +264,9 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true"),
                         AlterConfigOp.OpType.SET)
                 ));
-
-            var err2 = assertThrowsException(() -> admin.incrementalAlterConfigs(configs).all().get());
-            assertEquals(errorMsgMs, err2.getMessage());
+            
+            var err2 = assertFutureThrows(InvalidConfigurationException.class, admin.incrementalAlterConfigs(configs).all());
+            assertEquals(errorMsgMs, Objects.requireNonNull(err2).getMessage());
 
             // 6. alter the config to `remote.log.copy.disable=true` and local.retention.ms == retention.ms, it should work without error
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName3),
@@ -300,8 +299,8 @@ class RemoteTopicCrudTest {
         topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, "-2");
 
         try (var admin = cluster.admin()) {
-            var err = assertThrowsException(() -> admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
-            assertEquals(errorMsgBytes, err.getMessage());
+            var err = assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
+            assertEquals(errorMsgBytes, Objects.requireNonNull(err).getMessage());
 
             // 2. change the local.retention.bytes value to the same value as retention.bytes should successfully create the topic
             topicConfig.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, "1000");
@@ -327,8 +326,8 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, "true"),
                         AlterConfigOp.OpType.SET)
                 ));
-            var err2 = assertThrowsException(() -> admin.incrementalAlterConfigs(configs).all().get());
-            assertEquals(errorMsgBytes, err2.getMessage());
+            var err2 = assertFutureThrows(InvalidConfigurationException.class, admin.incrementalAlterConfigs(configs).all());
+            assertEquals(errorMsgBytes, Objects.requireNonNull(err2).getMessage());
 
             // 6. alter the config to `remote.log.copy.disable=true` and local.retention.bytes == retention.bytes, it should work without error
             configs.put(new ConfigResource(ConfigResource.Type.TOPIC, testTopicName3),
@@ -364,10 +363,8 @@ class RemoteTopicCrudTest {
             var topicConfig = Map.of(
                 TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"
             );
-            var message = assertThrowsException(
-                () -> admin.createTopics(
-                    List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all().get());
-            assertTrue(message.getMessage().contains("Tiered Storage functionality is disabled in the broker"));
+            var error = assertFutureThrows(InvalidConfigurationException.class, admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor).configs(topicConfig))).all());
+            assertTrue(Objects.requireNonNull(error).getMessage().contains("Tiered Storage functionality is disabled in the broker"));
 
             admin.createTopics(List.of(new NewTopic(testTopicName, numPartitions, numReplicationFactor))).all().get();
 
@@ -377,9 +374,8 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"),
                         AlterConfigOp.OpType.SET))
             );
-            var errorMessage = assertThrowsException(
-                () -> admin.incrementalAlterConfigs(configs).all().get());
-            assertTrue(errorMessage.getMessage().contains("Tiered Storage functionality is disabled in the broker"));
+            var error2 = assertFutureThrows(InvalidConfigurationException.class, admin.incrementalAlterConfigs(configs).all());
+            assertTrue(Objects.requireNonNull(error2).getMessage().contains("Tiered Storage functionality is disabled in the broker"));
         }
     }
 
@@ -445,9 +441,8 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_MS_CONFIG, "200"),
                         AlterConfigOp.OpType.SET)
                 ));
-
-            assertThrowsExceptionIgnoringResult(
-                () -> admin.incrementalAlterConfigs(configs).all().get());
+            
+            assertFutureThrows(InvalidConfigurationException.class, admin.incrementalAlterConfigs(configs).all());
         }
     }
 
@@ -468,10 +463,8 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_BYTES_CONFIG, "512"),
                         AlterConfigOp.OpType.SET)
                 ));
-
-            assertThrowsException(InvalidConfigurationException.class,
-                () -> admin.incrementalAlterConfigs(configs).all().get(),
-                "Invalid local retention size");
+            
+            assertFutureThrows(InvalidConfigurationException.class, admin.incrementalAlterConfigs(configs).all(), "Invalid value 1024 for configuration local.retention.bytes: Value must not be more than retention.bytes property value: 512");
         }
     }
 
@@ -491,12 +484,13 @@ class RemoteTopicCrudTest {
                     new AlterConfigOp(new ConfigEntry(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "false"),
                         AlterConfigOp.OpType.SET)
                 ));
-
-            assertThrowsException(InvalidConfigurationException.class,
-                () -> admin.incrementalAlterConfigs(configs).all().get(),
-                "It is invalid to disable remote storage without deleting remote data. " +
-                    "If you want to keep the remote data and turn to read only, please set `remote.storage.enable=true,remote.log.copy.disable=true`. " +
-                    "If you want to disable remote storage and delete all remote data, please set `remote.storage.enable=false,remote.log.delete.on.disable=true`.");
+            
+            assertFutureThrows(InvalidConfigurationException.class,
+                    admin.incrementalAlterConfigs(configs).all(),
+                    "It is invalid to disable remote storage without deleting remote data. " +
+                        "If you want to keep the remote data and turn to read only, please set `remote.storage.enable=true,remote.log.copy.disable=true`. " +
+                        "If you want to disable remote storage and delete all remote data, please set `remote.storage.enable=false,remote.log.delete.on.disable=true`."
+            );
         }
     }
 
@@ -549,38 +543,14 @@ class RemoteTopicCrudTest {
             admin.deleteTopics(List.of(testTopicName)).all().get();
 
             TestUtils.waitForCondition(() -> {
-                try {
-                    admin.describeTopics(List.of(testTopicName)).allTopicNames().get();
-                    return false;
-                } catch (Exception exception) {
-                    return exception.getCause() instanceof UnknownTopicOrPartitionException;
-                }
-            },  "Topic should be deleted");
+                assertFutureThrows(UnknownTopicOrPartitionException.class, admin.describeTopics(List.of(testTopicName)).allTopicNames());
+                return true;
+            }, "Topic should be deleted");
 
             TestUtils.waitForCondition(() ->
                     numPartitions * MyRemoteLogMetadataManager.SEGMENT_COUNT_PER_PARTITION == MyRemoteStorageManager.DELETE_SEGMENT_EVENT_COUNTER.get(), 
                 "Remote log segments should be deleted only once by the leader");
         }
-    }
-
-    private <T extends Throwable> T assertThrowsException(Class<T> expectedType,
-                                                          Executable executable,
-                                                          String message) {
-        return assertThrows(expectedType, () -> {
-            try {
-                executable.execute();
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
-        }, message);
-    }
-
-    private Throwable assertThrowsException(Executable executable) {
-        return assertThrowsException((Class<? extends Throwable>) InvalidConfigurationException.class, executable, null);
-    }
-
-    private void assertThrowsExceptionIgnoringResult(Executable executable) {
-        assertThrowsException((Class<? extends Throwable>) InvalidConfigurationException.class, executable, null);
     }
 
     private void verifyRemoteLogTopicConfigs(Map<String, String> topicConfig) throws Exception {
