@@ -197,6 +197,20 @@ public class StreamsGroup implements Group {
      */
     private DeadlineAndEpoch metadataRefreshDeadline = DeadlineAndEpoch.EMPTY;
 
+    /**
+     * Keeps a member ID that requested a shutdown for this group.
+     * This has no direct effect inside the group coordinator, but is propagated to old and new members of the group.
+     * It is cleared once the group is empty.
+     * This is not persisted in the log, as the shutdown request is best-effort.
+     */
+    private Optional<String> shutdownRequestMemberId = Optional.empty();
+
+    /**
+     * The current epoch for endpoint information, this is used to determine when to send
+     * updated endpoint information to members of the group.
+     */
+    private int endpointInformationEpoch = -1;
+
     public StreamsGroup(
         LogContext logContext,
         SnapshotRegistry snapshotRegistry,
@@ -675,7 +689,7 @@ public class StreamsGroup implements Group {
         String groupInstanceId,
         int memberEpoch,
         boolean isTransactional,
-        short apiVersion
+        int apiVersion
     ) throws UnknownMemberIdException, StaleMemberEpochException {
         // When the member epoch is -1, the request comes from either the admin client
         // or a consumer which does not use the group management facility. In this case,
@@ -824,6 +838,7 @@ public class StreamsGroup implements Group {
         StreamsGroupState newState = STABLE;
         if (members.isEmpty()) {
             newState = EMPTY;
+            clearShutdownRequestMemberId();
         } else if (topology().isEmpty() || configuredTopology().isEmpty() || !configuredTopology().get().isReady()) {
             newState = NOT_READY;
         } else if (groupEpoch.get() > targetAssignmentEpoch.get()) {
@@ -1049,4 +1064,29 @@ public class StreamsGroup implements Group {
         return describedGroup;
     }
 
+    public void setShutdownRequestMemberId(final String memberId) {
+        if (shutdownRequestMemberId.isEmpty()) {
+            log.info("[GroupId {}][MemberId {}] Shutdown requested for the streams application.", groupId, memberId);
+            shutdownRequestMemberId = Optional.of(memberId);
+        }
+    }
+
+    public Optional<String> getShutdownRequestMemberId() {
+        return shutdownRequestMemberId;
+    }
+
+    private void clearShutdownRequestMemberId() {
+        if (shutdownRequestMemberId.isPresent()) {
+            log.info("[GroupId {}] Clearing shutdown requested for the streams application.", groupId);
+            shutdownRequestMemberId = Optional.empty();
+        }
+    }
+
+    public int endpointInformationEpoch() {
+        return endpointInformationEpoch;
+    }
+
+    public void setEndpointInformationEpoch(int endpointInformationEpoch) {
+        this.endpointInformationEpoch = endpointInformationEpoch;
+    }
 }
