@@ -613,7 +613,7 @@ public class RequestResponseTest {
 
         TopicIdPartition topicIdPartition = new TopicIdPartition(id, new TopicPartition("test", 0));
         LinkedHashMap<TopicIdPartition, FetchResponseData.PartitionData> tpToData = new LinkedHashMap<>(Map.of(topicIdPartition, partitionData));
-        fetchResponse = FetchResponse.of(Errors.NONE, 0, INVALID_SESSION_ID, tpToData);
+        fetchResponse = FetchResponse.of(Errors.NONE, 0, INVALID_SESSION_ID, tpToData, Collections.emptyList());
         validateNoNullRecords(fetchResponse);
     }
 
