@@ -21,6 +21,8 @@ import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.kafka.common.config.ConfigDef.Importance.LOW;
 import static org.apache.kafka.common.config.ConfigDef.Importance.MEDIUM;
@@ -192,6 +194,8 @@ public final class RemoteLogManagerConfig {
     public static final long DEFAULT_REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS = 30000L;
 
     private final AbstractConfig config;
+
+    private final ConcurrentMap<String, Object> usedConfig = new ConcurrentHashMap<>();
 
     public static ConfigDef configDef() {
         return new ConfigDef()
@@ -372,51 +376,51 @@ public final class RemoteLogManagerConfig {
     }
 
     public boolean isRemoteStorageSystemEnabled() {
-        return config.getBoolean(REMOTE_LOG_STORAGE_SYSTEM_ENABLE_PROP);
+        return (Boolean) usedConfig.computeIfAbsent(REMOTE_LOG_STORAGE_SYSTEM_ENABLE_PROP, config::getBoolean);
     }
 
     public String remoteStorageManagerClassName() {
-        return config.getString(REMOTE_STORAGE_MANAGER_CLASS_NAME_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_STORAGE_MANAGER_CLASS_NAME_PROP, config::getString);
     }
 
     public String remoteStorageManagerClassPath() {
-        return config.getString(REMOTE_STORAGE_MANAGER_CLASS_PATH_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_STORAGE_MANAGER_CLASS_PATH_PROP, config::getString);
     }
 
     public String remoteLogMetadataManagerClassName() {
-        return config.getString(REMOTE_LOG_METADATA_MANAGER_CLASS_NAME_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_MANAGER_CLASS_NAME_PROP, config::getString);
     }
 
     public String remoteLogMetadataManagerClassPath() {
-        return config.getString(REMOTE_LOG_METADATA_MANAGER_CLASS_PATH_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_MANAGER_CLASS_PATH_PROP, config::getString);
     }
 
     public int remoteLogManagerThreadPoolSize() {
-        return config.getInt(REMOTE_LOG_MANAGER_THREAD_POOL_SIZE_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_THREAD_POOL_SIZE_PROP, config::getInt);
     }
 
     public int remoteLogManagerCopierThreadPoolSize() {
-        return config.getInt(REMOTE_LOG_MANAGER_COPIER_THREAD_POOL_SIZE_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_COPIER_THREAD_POOL_SIZE_PROP, config::getInt);
     }
 
     public int remoteLogManagerExpirationThreadPoolSize() {
-        return config.getInt(REMOTE_LOG_MANAGER_EXPIRATION_THREAD_POOL_SIZE_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_EXPIRATION_THREAD_POOL_SIZE_PROP, config::getInt);
     }
 
     public long remoteLogManagerTaskIntervalMs() {
-        return config.getLong(REMOTE_LOG_MANAGER_TASK_INTERVAL_MS_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_TASK_INTERVAL_MS_PROP, config::getLong);
     }
 
     public long remoteLogManagerTaskRetryBackoffMs() {
-        return config.getLong(REMOTE_LOG_MANAGER_TASK_RETRY_BACK_OFF_MS_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_TASK_RETRY_BACK_OFF_MS_PROP, config::getLong);
     }
 
     public long remoteLogManagerTaskRetryBackoffMaxMs() {
-        return config.getLong(REMOTE_LOG_MANAGER_TASK_RETRY_BACK_OFF_MAX_MS_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_TASK_RETRY_BACK_OFF_MAX_MS_PROP, config::getLong);
     }
 
     public double remoteLogManagerTaskRetryJitter() {
-        return config.getDouble(REMOTE_LOG_MANAGER_TASK_RETRY_JITTER_PROP);
+        return (Double) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_TASK_RETRY_JITTER_PROP, config::getDouble);
     }
 
     public int remoteLogReaderThreads() {
@@ -424,80 +428,77 @@ public final class RemoteLogManagerConfig {
     }
 
     public int remoteLogReaderMaxPendingTasks() {
-        return config.getInt(REMOTE_LOG_READER_MAX_PENDING_TASKS_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_READER_MAX_PENDING_TASKS_PROP, config::getInt);
     }
 
     public String remoteLogMetadataManagerListenerName() {
-        return config.getString(REMOTE_LOG_METADATA_MANAGER_LISTENER_NAME_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_MANAGER_LISTENER_NAME_PROP, config::getString);
     }
 
     public int remoteLogMetadataCustomMetadataMaxBytes() {
-        return config.getInt(REMOTE_LOG_METADATA_CUSTOM_METADATA_MAX_BYTES_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_CUSTOM_METADATA_MAX_BYTES_PROP, config::getInt);
     }
 
     public String remoteStorageManagerPrefix() {
-        return config.getString(REMOTE_STORAGE_MANAGER_CONFIG_PREFIX_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_STORAGE_MANAGER_CONFIG_PREFIX_PROP, config::getString);
     }
 
     public String remoteLogMetadataManagerPrefix() {
-        return config.getString(REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX_PROP);
+        return (String) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX_PROP, config::getString);
     }
 
     public Map<String, Object> remoteStorageManagerProps() {
-        return getConfigProps(REMOTE_STORAGE_MANAGER_CONFIG_PREFIX_PROP);
+        String prefix = (String) usedConfig.computeIfAbsent(REMOTE_STORAGE_MANAGER_CONFIG_PREFIX_PROP, config::getString);
+        return prefix == null ? Map.of() : Collections.unmodifiableMap(config.originalsWithPrefix(prefix));
     }
 
     public Map<String, Object> remoteLogMetadataManagerProps() {
-        return getConfigProps(REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX_PROP);
-    }
-
-    public Map<String, Object> getConfigProps(String configPrefixProp) {
-        String prefixProp = config.getString(configPrefixProp);
-        return prefixProp == null ? Map.of() : Collections.unmodifiableMap(config.originalsWithPrefix(prefixProp));
+        String prefix = (String) usedConfig.computeIfAbsent(REMOTE_LOG_METADATA_MANAGER_CONFIG_PREFIX_PROP, config::getString);
+        return prefix == null ? Map.of() : Collections.unmodifiableMap(config.originalsWithPrefix(prefix));
     }
 
     public int remoteLogManagerCopyNumQuotaSamples() {
-        return config.getInt(REMOTE_LOG_MANAGER_COPY_QUOTA_WINDOW_NUM_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_COPY_QUOTA_WINDOW_NUM_PROP, config::getInt);
     }
 
     public int remoteLogManagerCopyQuotaWindowSizeSeconds() {
-        return config.getInt(REMOTE_LOG_MANAGER_COPY_QUOTA_WINDOW_SIZE_SECONDS_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_COPY_QUOTA_WINDOW_SIZE_SECONDS_PROP, config::getInt);
     }
 
     public int remoteLogManagerFetchNumQuotaSamples() {
-        return config.getInt(REMOTE_LOG_MANAGER_FETCH_QUOTA_WINDOW_NUM_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_FETCH_QUOTA_WINDOW_NUM_PROP, config::getInt);
     }
 
     public int remoteLogManagerFetchQuotaWindowSizeSeconds() {
-        return config.getInt(REMOTE_LOG_MANAGER_FETCH_QUOTA_WINDOW_SIZE_SECONDS_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_FETCH_QUOTA_WINDOW_SIZE_SECONDS_PROP, config::getInt);
     }
 
     public long remoteLogIndexFileCacheTotalSizeBytes() {
-        return config.getLong(REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, config::getLong);
     }
 
     public long remoteLogManagerCopyMaxBytesPerSecond() {
-        return config.getLong(REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_COPY_MAX_BYTES_PER_SECOND_PROP, config::getLong);
     }
 
     public long remoteLogManagerFetchMaxBytesPerSecond() {
-        return config.getLong(REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LOG_MANAGER_FETCH_MAX_BYTES_PER_SECOND_PROP, config::getLong);
     }
 
     public int remoteFetchMaxWaitMs() {
-        return config.getInt(REMOTE_FETCH_MAX_WAIT_MS_PROP);
+        return (Integer) usedConfig.computeIfAbsent(REMOTE_FETCH_MAX_WAIT_MS_PROP, config::getInt);
     }
 
     public long logLocalRetentionBytes() {
-        return config.getLong(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP);
+        return (Long) usedConfig.computeIfAbsent(LOG_LOCAL_RETENTION_BYTES_PROP, config::getLong);
     }
 
     public long logLocalRetentionMs() {
-        return config.getLong(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_MS_PROP);
+        return (Long) usedConfig.computeIfAbsent(LOG_LOCAL_RETENTION_MS_PROP, config::getLong);
     }
 
     public long remoteListOffsetsRequestTimeoutMs() {
-        return config.getLong(REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_PROP);
+        return (Long) usedConfig.computeIfAbsent(REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_PROP, config::getLong);
     }
 
     public static void main(String[] args) {
