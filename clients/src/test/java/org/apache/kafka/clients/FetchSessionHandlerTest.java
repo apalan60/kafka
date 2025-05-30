@@ -289,8 +289,7 @@ public class FetchSessionHandlerTest {
             // Skip building a new request.  Test that handling an invalid fetch session epoch response results
             // in a request which closes the session.
             FetchResponse resp3 = FetchResponse.of(Errors.INVALID_FETCH_SESSION_EPOCH, 0, INVALID_SESSION_ID,
-                respMap(),
-                    Collections.emptyList());
+                respMap(), List.of());
             handler.handleResponse(resp3, version);
 
             FetchSessionHandler.Builder builder4 = handler.newBuilder();
