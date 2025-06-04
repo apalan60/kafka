@@ -271,14 +271,11 @@ public class QuorumControllerMetrics implements AutoCloseable {
     }
 
     public int timeSinceLastHeartbeatMs(int brokerId) {
-        if (!brokerContactTimesMs.containsKey(brokerId)) {
+        Long lastTime = brokerContactTimesMs.get(brokerId);
+        if (lastTime == null) {
             return sessionTimeoutMs;
-        } else {
-            return Math.min(
-                (int) (time.milliseconds() - brokerContactTimesMs.get(brokerId)),
-                sessionTimeoutMs
-            );
         }
+        return Math.min((int) (time.milliseconds() - lastTime), sessionTimeoutMs);
     }
 
     @Override
