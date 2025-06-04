@@ -227,11 +227,7 @@ public final class ControllerMetadataMetrics implements AutoCloseable {
             return;
         }
         BrokerRegistrationState brokerState = getBrokerRegistrationState(brokerRegistration);
-        if (brokerRegistrationStates.containsKey(brokerId)) {
-            brokerRegistrationStates.computeIfPresent(brokerId, (id, state) -> brokerState.state());
-        } else {
-            brokerRegistrationStates.put(brokerId, brokerState.state());
-        }
+        brokerRegistrationStates.put(brokerId, brokerState.state());
     }
 
     public int brokerRegistrationState(int brokerId) {

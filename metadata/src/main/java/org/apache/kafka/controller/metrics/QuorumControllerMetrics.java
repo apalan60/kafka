@@ -267,7 +267,7 @@ public class QuorumControllerMetrics implements AutoCloseable {
     }
 
     public void updateBrokerContactTime(int brokerId) {
-        brokerContactTimesMs.compute(brokerId, (id, timeMs) -> time.milliseconds());
+        brokerContactTimesMs.put(brokerId, time.milliseconds());
     }
 
     public int timeSinceLastHeartbeatMs(int brokerId) {
