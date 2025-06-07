@@ -20,7 +20,11 @@ import org.apache.kafka.common.utils.MockTime;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.runtime.rest.entities.LoggerLevel;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,11 +45,18 @@ public class LoggersTest {
     private static final long INITIAL_TIME = 1696951712135L;
     private Loggers.Log4jLoggers loggers;
     private Time time;
+    Level originalRootLevel;
 
     @BeforeEach
     public void setup() {
+        originalRootLevel = LogManager.getRootLogger().getLevel();
         time = new MockTime(0, INITIAL_TIME, 0);
         loggers = (Loggers.Log4jLoggers) Loggers.newInstance(time);
+    }
+    
+    @AfterEach
+    public void teardown() {
+        Configurator.setAllLevels(LogManager.ROOT_LOGGER_NAME, originalRootLevel);
     }
 
     @Test
