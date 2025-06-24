@@ -52,6 +52,8 @@ public class LoggersTest {
     
     @AfterEach
     public void tearDown() {
+        // Reset LoggerContext to its initial configuration.
+        // This ensures any log level changes made in a test do not leak into subsequent tests.
         LoggerContext.getContext(false).reconfigure();
     }
 
