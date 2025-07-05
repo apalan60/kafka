@@ -742,13 +742,19 @@ class DynamicBrokerConfigTest {
     // update default config
     config.dynamicConfig.validate(newProps, perBrokerConfig = false)
     config.dynamicConfig.updateDefaultConfig(newProps)
-    assertEquals(4294967295L, config.remoteLogManagerConfig.logLocalRetentionBytes)
+    assertEquals(4294967295L, RemoteLogManagerConfig.of(config).logLocalRetentionBytes)
+
+    //todo remove, just test for me 
+    //this will failed because I did not handle the poll-based correctly 
+    newProps.put(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP, "4294967293")
+    config.dynamicConfig.updateDefaultConfig(newProps)
+    assertEquals(4294967293L, RemoteLogManagerConfig.of(config).logLocalRetentionBytes)
 
     // update per broker config
     config.dynamicConfig.validate(newProps, perBrokerConfig = true)
     newProps.put(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP, "4294967294")
     config.dynamicConfig.updateBrokerConfig(0, newProps)
-    assertEquals(4294967294L, config.remoteLogManagerConfig.logLocalRetentionBytes)
+    assertEquals(4294967294L, RemoteLogManagerConfig.of(config).logLocalRetentionBytes)
   }
 
   @Test
