@@ -21,6 +21,7 @@ import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.kafka.common.config.ConfigDef.Importance.LOW;
 import static org.apache.kafka.common.config.ConfigDef.Importance.MEDIUM;
@@ -231,6 +232,8 @@ public final class RemoteLogManagerConfig {
     private final String remoteLogMetadataManagerPrefix;
     private final Map<String, Object> remoteStorageManagerProps;
     private final Map<String, Object> remoteLogMetadataManagerProps;
+    
+    private static final AtomicReference<RemoteLogManagerConfig> currentRemoteLogManagerConfig = new AtomicReference<>();
 
     public static ConfigDef configDef() {
         return new ConfigDef()
@@ -410,6 +413,20 @@ public final class RemoteLogManagerConfig {
                         atLeast(1),
                         MEDIUM,
                         REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_DOC);
+    }
+    
+    public static RemoteLogManagerConfig of(AbstractConfig config){
+        RemoteLogManagerConfig remoteLogManagerConfig = currentRemoteLogManagerConfig.get();
+        if (remoteLogManagerConfig != null)
+            return remoteLogManagerConfig;
+
+        return currentRemoteLogManagerConfig.compareAndSet(null, new RemoteLogManagerConfig(config)) 
+                ? new RemoteLogManagerConfig(config) 
+                : currentRemoteLogManagerConfig.get();  // If another thread has already set the config, return the existing one
+    }
+    
+    public static void update(AbstractConfig config){
+        currentRemoteLogManagerConfig.set(new RemoteLogManagerConfig(config));
     }
     
     public RemoteLogManagerConfig(AbstractConfig config) {
