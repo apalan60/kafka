@@ -188,8 +188,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   def valuesFromThisConfigWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     super.valuesWithPrefixOverride(prefix)
 
-  private val _remoteLogManagerConfig = new RemoteLogManagerConfig(this)
-  def remoteLogManagerConfig = _remoteLogManagerConfig
+  def remoteLogManagerConfig = RemoteLogManagerConfig.of(this)
 
   private val _quorumConfig = new QuorumConfig(this)
   def quorumConfig: QuorumConfig = _quorumConfig
