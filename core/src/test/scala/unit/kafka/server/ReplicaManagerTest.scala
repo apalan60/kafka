@@ -2996,7 +2996,7 @@ class ReplicaManagerTest {
     when(mockLog.config).thenReturn(logConfig)
     when(mockLog.remoteLogEnabled()).thenReturn(enableRemoteStorage)
     val aliveBrokers = aliveBrokerIds.map(brokerId => new Node(brokerId, s"host$brokerId", brokerId))
-    brokerTopicStats = new BrokerTopicStats(KafkaConfig.fromProps(props).remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(KafkaConfig.fromProps(props)).isRemoteStorageSystemEnabled)
 
     val metadataCache: MetadataCache = mock(classOf[MetadataCache])
     when(metadataCache.topicIdsToNames()).thenReturn(topicNames.asJava)
@@ -3421,9 +3421,9 @@ class ReplicaManagerTest {
     props.put(RemoteLogManagerConfig.REMOTE_LOG_READER_THREADS_PROP, 2.toString)
     val config = KafkaConfig.fromProps(props)
     val mockLog = mock(classOf[UnifiedLog])
-    val brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    val brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled)
     val remoteLogManager = new RemoteLogManager(
-      config.remoteLogManagerConfig,
+      RemoteLogManagerConfig.of(config),
       0,
       TestUtils.tempRelativeDir("data").getAbsolutePath,
       "clusterId",
@@ -3518,9 +3518,9 @@ class ReplicaManagerTest {
     props.put(RemoteLogManagerConfig.REMOTE_LOG_METADATA_MANAGER_CLASS_NAME_PROP, classOf[NoOpRemoteLogMetadataManager].getName)
     val config = KafkaConfig.fromProps(props)
     val dummyLog = mock(classOf[UnifiedLog])
-    val brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+    val brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled)
     val remoteLogManager = new RemoteLogManager(
-      config.remoteLogManagerConfig,
+      RemoteLogManagerConfig.of(config),
       0,
       TestUtils.tempRelativeDir("data").getAbsolutePath,
       "clusterId",

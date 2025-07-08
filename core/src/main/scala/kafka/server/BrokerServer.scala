@@ -199,7 +199,7 @@ class BrokerServer(
       kafkaScheduler.startup()
 
       /* register broker metrics */
-      brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig.isRemoteStorageSystemEnabled())
+      brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled)
 
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size)
 
@@ -434,7 +434,7 @@ class BrokerServer(
         config.shareGroupConfig.shareGroupRecordLockDurationMs,
         config.shareGroupConfig.shareGroupDeliveryCountLimit,
         config.shareGroupConfig.shareGroupPartitionMaxRecordLocks,
-        config.remoteLogManagerConfig.remoteFetchMaxWaitMs().toLong,
+        RemoteLogManagerConfig.of(config).remoteFetchMaxWaitMs().toLong,
         persister,
         groupConfigManager,
         brokerTopicStats
@@ -690,8 +690,9 @@ class BrokerServer(
   }
 
   protected def createRemoteLogManager(listenerInfo: ListenerInfo): Option[RemoteLogManager] = {
-    if (config.remoteLogManagerConfig.isRemoteStorageSystemEnabled) {
-      val listenerName = config.remoteLogManagerConfig.remoteLogMetadataManagerListenerName()
+    val remoteLogManagerConfig = RemoteLogManagerConfig.of(config)
+    if (remoteLogManagerConfig.isRemoteStorageSystemEnabled) {
+      val listenerName = remoteLogManagerConfig.remoteLogMetadataManagerListenerName()
       val endpoint = if (listenerName != null) {
         Some(listenerInfo.listeners().values().stream
           .filter(e => ListenerName.normalised(e.listener()).equals(ListenerName.normalised(listenerName)))
@@ -702,7 +703,7 @@ class BrokerServer(
         None
       }
 
-      val rlm = new RemoteLogManager(config.remoteLogManagerConfig, config.brokerId, config.logDirs.get(0), clusterId, time,
+      val rlm = new RemoteLogManager(remoteLogManagerConfig, config.brokerId, config.logDirs.get(0), clusterId, time,
         (tp: TopicPartition) => logManager.getLog(tp).toJava,
         (tp: TopicPartition, remoteLogStartOffset: java.lang.Long) => {
           logManager.getLog(tp).foreach { log =>
