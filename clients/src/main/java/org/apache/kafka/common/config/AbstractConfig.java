@@ -172,9 +172,9 @@ public class AbstractConfig {
     }
 
     protected Object get(String key) {
-        if (!values.containsKey(key))
+        if (!values.containsKey(key)) //todo should go to here to get the latest config value
             throw new ConfigException(String.format("Unknown configuration '%s'", key));
-        used.add(key);
+        used.add(key); //todo or here, if dynamic config is not existed
         return values.get(key);
     }
 

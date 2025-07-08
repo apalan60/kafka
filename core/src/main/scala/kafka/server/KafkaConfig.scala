@@ -180,7 +180,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   override def valuesWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     if (this eq currentConfig) super.valuesWithPrefixOverride(prefix) else currentConfig.valuesWithPrefixOverride(prefix)
   override def get(key: String): AnyRef =
-    if (this eq currentConfig) super.get(key) else currentConfig.get(key)
+    if (this eq currentConfig) super.get(key) else currentConfig.get(key) //todo after dynamic config updated, it will go to 'else'
 
   //  During dynamic update, we use the values from this config, these are only used in DynamicBrokerConfig
   private[server] def originalsFromThisConfig: util.Map[String, AnyRef] = super.originals
@@ -188,7 +188,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   def valuesFromThisConfigWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     super.valuesWithPrefixOverride(prefix)
 
-  private val _remoteLogManagerConfig = new RemoteLogManagerConfig(this)
+  private val _remoteLogManagerConfig = new RemoteLogManagerConfig(this) //todo: when broker startup, the remote log manager config will be initialized, but if we remove it from kafkaConfig, should think about another solution
   def remoteLogManagerConfig = _remoteLogManagerConfig
 
   private val _quorumConfig = new QuorumConfig(this)

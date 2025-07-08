@@ -540,7 +540,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     val (newConfig, brokerReconfigurablesToUpdate) = processReconfiguration(newProps, validateOnly = false, doLog)
     if (newConfig ne currentConfig) {
       currentConfig = newConfig
-      kafkaConfig.updateCurrentConfig(newConfig)
+      kafkaConfig.updateCurrentConfig(newConfig) //todo replace by newConfig 
 
       // Process BrokerReconfigurable updates after current config is updated
       brokerReconfigurablesToUpdate.foreach(_.reconfigure(oldConfig, newConfig))
@@ -548,7 +548,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
   }
 
   private def processReconfiguration(newProps: Map[String, String], validateOnly: Boolean, doLog: Boolean = false): (KafkaConfig, List[BrokerReconfigurable]) = {
-    val newConfig = new KafkaConfig(newProps.asJava, doLog)
+    val newConfig = new KafkaConfig(newProps.asJava, doLog) //todo first time update dynamically in here, new RemoteLogManagerConfig
     val (changeMap, deletedKeySet) = updatedConfigs(newConfig.originalsFromThisConfig, currentConfig.originals)
     if (changeMap.nonEmpty || deletedKeySet.nonEmpty) {
       try {
@@ -568,7 +568,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
           if (needsReconfiguration(reconfigurable.reconfigurableConfigs.asJava, changeMap.keySet, deletedKeySet)) {
             reconfigurable.validateReconfiguration(newConfig)
             if (!validateOnly)
-              brokerReconfigurablesToUpdate += reconfigurable
+              brokerReconfigurablesToUpdate += reconfigurable  //todo logManager should be updated here
           }
         }
         (newConfig, brokerReconfigurablesToUpdate.toList)

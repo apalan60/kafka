@@ -382,6 +382,7 @@ public final class RemoteLogManagerConfig {
                         REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_DOC);
     }
     
+    
     public RemoteLogManagerConfig(AbstractConfig config) {
         this.config = config;
     }
