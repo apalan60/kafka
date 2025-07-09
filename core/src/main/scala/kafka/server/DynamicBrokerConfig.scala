@@ -393,7 +393,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     try {
       val props = fromPersistentProps(persistentProps, perBrokerConfig = false)
       dynamicDefaultConfigs.clear()
-      dynamicDefaultConfigs ++= props.asScala
+      dynamicDefaultConfigs ++= props.asScala //todo update happend here, clear and override
       updateCurrentConfig(doLog)
     } catch {
       case e: Exception => error(s"Cluster default configs could not be applied: ${persistentProps.keys()}", e)
