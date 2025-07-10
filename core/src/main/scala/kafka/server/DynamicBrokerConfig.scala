@@ -306,7 +306,8 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     addBrokerReconfigurable(new DynamicListenerConfig(kafkaServer))
     addBrokerReconfigurable(kafkaServer.socketServer)
     addBrokerReconfigurable(new DynamicProducerStateManagerConfig(kafkaServer.logManager.producerStateManagerConfig))
-    addBrokerReconfigurable(new DynamicRemoteLogConfig(kafkaServer)) //todo check here, seems to update this instance when dynamic config is updated
+    val rlmConfig = RemoteLogManagerConfig.instance(kafkaServer.config)
+    addBrokerReconfigurable(new DynamicRemoteLogConfig(kafkaServer, rlmConfig)) //todo check here, seems to update this instance when dynamic config is updated
   }
 
   /**
@@ -1010,7 +1011,8 @@ class DynamicListenerConfig(server: KafkaBroker) extends BrokerReconfigurable wi
 
 }
 
-class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable with Logging {
+class DynamicRemoteLogConfig(server: KafkaBroker,
+                             rlmConfig: RemoteLogManagerConfig) extends BrokerReconfigurable with Logging {
   override def reconfigurableConfigs: Set[String] = {
     DynamicRemoteLogConfig.ReconfigurableConfigs
   }
@@ -1057,6 +1059,8 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
   }
 
   override def reconfigure(oldConfig: KafkaConfig, newConfig: KafkaConfig): Unit = {
+    rlmConfig.update(newConfig)
+    
     def oldLongValue(k: String): Long = oldConfig.getLong(k)
     def newLongValue(k: String): Long = newConfig.getLong(k)
 

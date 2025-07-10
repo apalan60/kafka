@@ -189,6 +189,6 @@ class RemoteLogOffsetReaderTest {
         props.put(RemoteLogManagerConfig.REMOTE_LOG_READER_THREADS_PROP, threads);
         props.put(RemoteLogManagerConfig.REMOTE_LOG_READER_MAX_PENDING_TASKS_PROP, taskQueueSize);
         AbstractConfig config = new AbstractConfig(RemoteLogManagerConfig.configDef(), props, false);
-        return RemoteLogManagerConfig.of(config);
+        return RemoteLogManagerConfig.instance(config);
     }
 }

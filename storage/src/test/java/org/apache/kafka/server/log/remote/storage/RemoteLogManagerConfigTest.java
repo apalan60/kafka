@@ -91,6 +91,40 @@ public class RemoteLogManagerConfigTest {
         assertEquals(2, rlmConfig.remoteLogManagerFollowerThreadPoolSize());
     }
 
+    @Test
+    public void testSingletonBehavior() {
+        // Test that the same instance is returned for the same config
+        Map<String, Object> props1 = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
+        AbstractConfig config1 = new RLMTestConfig(props1);
+        RemoteLogManagerConfig rlmConfig1 = RemoteLogManagerConfig.instance(config1);
+        RemoteLogManagerConfig rlmConfig2 = RemoteLogManagerConfig.instance(config1);
+        
+        // Should return the same instance
+        assertEquals(rlmConfig1, rlmConfig2);
+        assertEquals(1024L, rlmConfig1.remoteLogIndexFileCacheTotalSizeBytes());
+    }
+
+    @Test
+    public void testDynamicUpdate() {
+        // Test that dynamic updates work correctly
+        Map<String, Object> initialProps = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
+        AbstractConfig initialConfig = new RLMTestConfig(initialProps);
+        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.instance(initialConfig);
+        
+        // Initial value
+        assertEquals(1024L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
+        
+        // Create new config with updated value
+        Map<String, Object> updatedProps = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L);
+        AbstractConfig updatedConfig = new RLMTestConfig(updatedProps);
+        
+        // Update the singleton
+        rlmConfig.update(updatedConfig);
+        
+        // Verify the value has been updated
+        assertEquals(2048L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
+    }
+
     private Map<String, Object> getRLMProps(String rsmPrefix, String rlmmPrefix) {
         Map<String, Object> props = new HashMap<>();
         props.put(RemoteLogManagerConfig.REMOTE_LOG_STORAGE_SYSTEM_ENABLE_PROP, true);
@@ -140,7 +174,7 @@ public class RemoteLogManagerConfigTest {
 
         public RLMTestConfig(Map<?, ?> originals) {
             super(RemoteLogManagerConfig.configDef(), originals, true);
-            rlmConfig = RemoteLogManagerConfig.of(this);
+            rlmConfig = RemoteLogManagerConfig.instance(this);
         }
 
         public RemoteLogManagerConfig remoteLogManagerConfig() {
