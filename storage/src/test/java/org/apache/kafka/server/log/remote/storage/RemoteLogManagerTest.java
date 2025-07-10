@@ -263,7 +263,7 @@ public class RemoteLogManagerTest {
     }
 
     private RemoteLogManagerConfig configs(Properties props) {
-        return new RemoteLogManagerConfig(new AbstractConfig(RemoteLogManagerConfig.configDef(), props));
+        return RemoteLogManagerConfig.of(new AbstractConfig(RemoteLogManagerConfig.configDef(), props));
     }
 
     @AfterEach

@@ -188,8 +188,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   def valuesFromThisConfigWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     super.valuesWithPrefixOverride(prefix)
 
-  private val _remoteLogManagerConfig = new RemoteLogManagerConfig(this) //todo: when broker startup, the remote log manager config will be initialized, but if we remove it from kafkaConfig, should think about another solution
-  def remoteLogManagerConfig = _remoteLogManagerConfig
+  def remoteLogManagerConfig = RemoteLogManagerConfig.of(this)
 
   private val _quorumConfig = new QuorumConfig(this)
   def quorumConfig: QuorumConfig = _quorumConfig

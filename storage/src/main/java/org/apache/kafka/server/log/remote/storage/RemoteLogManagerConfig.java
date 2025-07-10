@@ -383,8 +383,12 @@ public final class RemoteLogManagerConfig {
     }
     
     
-    public RemoteLogManagerConfig(AbstractConfig config) {
+    private RemoteLogManagerConfig(AbstractConfig config) {
         this.config = config;
+    }
+
+    public static RemoteLogManagerConfig of(AbstractConfig config) {
+        return new RemoteLogManagerConfig(config);
     }
 
     public boolean isRemoteStorageSystemEnabled() {

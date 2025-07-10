@@ -140,7 +140,7 @@ public class RemoteLogManagerConfigTest {
 
         public RLMTestConfig(Map<?, ?> originals) {
             super(RemoteLogManagerConfig.configDef(), originals, true);
-            rlmConfig = new RemoteLogManagerConfig(this);
+            rlmConfig = RemoteLogManagerConfig.of(this);
         }
 
         public RemoteLogManagerConfig remoteLogManagerConfig() {
