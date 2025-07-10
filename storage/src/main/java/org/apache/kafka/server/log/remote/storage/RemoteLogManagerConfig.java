@@ -200,7 +200,6 @@ public final class RemoteLogManagerConfig {
     public static final String REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_DOC = "The maximum amount of time the server will wait for the remote list offsets request to complete.";
     public static final long DEFAULT_REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS = 30000L;
 
-    private final AbstractConfig config;
 
     public static ConfigDef configDef() {
         return new ConfigDef()
@@ -381,8 +380,9 @@ public final class RemoteLogManagerConfig {
                         MEDIUM,
                         REMOTE_LIST_OFFSETS_REQUEST_TIMEOUT_MS_DOC);
     }
-    
-    
+
+    private final AbstractConfig config;
+
     private RemoteLogManagerConfig(AbstractConfig config) {
         this.config = config;
     }
