@@ -96,8 +96,8 @@ public class RemoteLogManagerConfigTest {
         // Test that the same instance is returned for the same config
         Map<String, Object> props1 = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
         AbstractConfig config1 = new RLMTestConfig(props1);
-        RemoteLogManagerConfig rlmConfig1 = RemoteLogManagerConfig.instance(config1);
-        RemoteLogManagerConfig rlmConfig2 = RemoteLogManagerConfig.instance(config1);
+        RemoteLogManagerConfig rlmConfig1 = RemoteLogManagerConfig.of(config1);
+        RemoteLogManagerConfig rlmConfig2 = RemoteLogManagerConfig.of(config1);
         
         // Should return the same instance
         assertEquals(rlmConfig1, rlmConfig2);
@@ -109,7 +109,7 @@ public class RemoteLogManagerConfigTest {
         // Test that dynamic updates work correctly
         Map<String, Object> initialProps = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
         AbstractConfig initialConfig = new RLMTestConfig(initialProps);
-        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.instance(initialConfig);
+        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.of(initialConfig);
         
         // Initial value
         assertEquals(1024L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
@@ -174,7 +174,7 @@ public class RemoteLogManagerConfigTest {
 
         public RLMTestConfig(Map<?, ?> originals) {
             super(RemoteLogManagerConfig.configDef(), originals, true);
-            rlmConfig = RemoteLogManagerConfig.instance(this);
+            rlmConfig = RemoteLogManagerConfig.of(this);
         }
 
         public RemoteLogManagerConfig remoteLogManagerConfig() {

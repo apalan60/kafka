@@ -306,7 +306,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     addBrokerReconfigurable(new DynamicListenerConfig(kafkaServer))
     addBrokerReconfigurable(kafkaServer.socketServer)
     addBrokerReconfigurable(new DynamicProducerStateManagerConfig(kafkaServer.logManager.producerStateManagerConfig))
-    val rlmConfig = RemoteLogManagerConfig.instance(kafkaServer.config)
+    val rlmConfig = RemoteLogManagerConfig.of(kafkaServer.config)
     addBrokerReconfigurable(new DynamicRemoteLogConfig(kafkaServer, rlmConfig)) //todo check here, seems to update this instance when dynamic config is updated
   }
 
