@@ -49,16 +49,15 @@ public final class RemoteLogManagerConfig {
         return existingConfig;
     }
     
-    private final AtomicReference<AbstractConfig> configRef = new AtomicReference<>();
+    private final AtomicReference<AbstractConfig> configRef;
 
     private RemoteLogManagerConfig(final AbstractConfig config) {
-        this.configRef.set(config);
+        this.configRef = new AtomicReference<>(config);
     }
 
     public void update(final AbstractConfig newConfig) {
         this.configRef.set(newConfig);
     }
-
     /**
      * Prefix used for properties to be passed to {@link RemoteStorageManager} implementation. Remote log subsystem collects all the properties having
      * this prefix and passes to {@code RemoteStorageManager} using {@link RemoteStorageManager#configure(Map)}.
