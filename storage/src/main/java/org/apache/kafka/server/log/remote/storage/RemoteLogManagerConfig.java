@@ -35,22 +35,18 @@ import static org.apache.kafka.common.config.ConfigDef.Type.STRING;
 
 
 public final class RemoteLogManagerConfig {
-    private static volatile RemoteLogManagerConfig instance;
+    private static final AtomicReference<RemoteLogManagerConfig> instanceRef = new AtomicReference<>();
     
     public static RemoteLogManagerConfig instance(final AbstractConfig initialConfig) {
-        RemoteLogManagerConfig inst = instance;
-        if (inst == null) {
-            synchronized (RemoteLogManagerConfig.class) {
-                inst = instance;
-                if (inst == null) {
-                    inst = new RemoteLogManagerConfig(initialConfig);
-                    instance = inst;
-                    return inst;
-                }
-            }
+        RemoteLogManagerConfig current = instanceRef.get();
+        if (current == null) {
+            var newConfig = new RemoteLogManagerConfig(initialConfig);
+            if (instanceRef.compareAndSet(null, newConfig))
+                return newConfig;
         }
-        inst.update(initialConfig);
-        return inst;
+        var existingConfig = instanceRef.get();
+        existingConfig.update(initialConfig);
+        return existingConfig;
     }
     
     private final AtomicReference<AbstractConfig> configRef = new AtomicReference<>();
