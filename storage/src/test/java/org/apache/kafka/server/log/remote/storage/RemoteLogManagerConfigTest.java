@@ -92,36 +92,25 @@ public class RemoteLogManagerConfigTest {
     }
 
     @Test
-    public void testSingletonBehavior() {
-        // Test that the same instance is returned for the same config
+    void testSingletonBehavior() {
         Map<String, Object> props1 = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
         AbstractConfig config1 = new RLMTestConfig(props1);
         RemoteLogManagerConfig rlmConfig1 = RemoteLogManagerConfig.of(config1);
         RemoteLogManagerConfig rlmConfig2 = RemoteLogManagerConfig.of(config1);
         
-        // Should return the same instance
         assertEquals(rlmConfig1, rlmConfig2);
         assertEquals(1024L, rlmConfig1.remoteLogIndexFileCacheTotalSizeBytes());
     }
 
     @Test
-    public void testDynamicUpdate() {
-        // Test that dynamic updates work correctly
-        Map<String, Object> initialProps = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
-        AbstractConfig initialConfig = new RLMTestConfig(initialProps);
-        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.of(initialConfig);
-        
-        // Initial value
+    void testDynamicUpdate() {
+        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.of(
+                new RLMTestConfig(Map.<String, Object>of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L))
+        );
         assertEquals(1024L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
-        
-        // Create new config with updated value
-        Map<String, Object> updatedProps = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L);
-        AbstractConfig updatedConfig = new RLMTestConfig(updatedProps);
-        
-        // Update the singleton
-        rlmConfig.update(updatedConfig);
-        
-        // Verify the value has been updated
+
+        rlmConfig.update(
+                new RLMTestConfig(Map.<String, Object>of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L)));
         assertEquals(2048L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
     }
 

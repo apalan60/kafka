@@ -33,7 +33,6 @@ import static org.apache.kafka.common.config.ConfigDef.Type.INT;
 import static org.apache.kafka.common.config.ConfigDef.Type.LONG;
 import static org.apache.kafka.common.config.ConfigDef.Type.STRING;
 
-
 public final class RemoteLogManagerConfig {
     private static final AtomicReference<RemoteLogManagerConfig> INSTANCE_REF = new AtomicReference<>();
 
