@@ -180,7 +180,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   override def valuesWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     if (this eq currentConfig) super.valuesWithPrefixOverride(prefix) else currentConfig.valuesWithPrefixOverride(prefix)
   override def get(key: String): AnyRef =
-    if (this eq currentConfig) super.get(key) else currentConfig.get(key) //todo after dynamic config updated, it will go to 'else'
+    if (this eq currentConfig) super.get(key) else currentConfig.get(key)
 
   //  During dynamic update, we use the values from this config, these are only used in DynamicBrokerConfig
   private[server] def originalsFromThisConfig: util.Map[String, AnyRef] = super.originals
