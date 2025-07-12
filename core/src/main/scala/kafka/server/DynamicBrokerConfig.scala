@@ -257,7 +257,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
   // Use COWArrayList to prevent concurrent modification exception when an item is added by one thread to these
   // collections, while another thread is iterating over them.
   private[server] val reconfigurables = new CopyOnWriteArrayList[Reconfigurable]()
-  private val brokerReconfigurables = new CopyOnWriteArrayList[BrokerReconfigurable]() //todo: affter add reconfigurable, this should be initialized
+  private val brokerReconfigurables = new CopyOnWriteArrayList[BrokerReconfigurable]()
   private val lock = new ReentrantReadWriteLock
   private var metricsReceiverPluginOpt: Option[ClientMetricsReceiverPlugin] = _
   private var currentConfig: KafkaConfig = _
@@ -306,8 +306,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     addBrokerReconfigurable(new DynamicListenerConfig(kafkaServer))
     addBrokerReconfigurable(kafkaServer.socketServer)
     addBrokerReconfigurable(new DynamicProducerStateManagerConfig(kafkaServer.logManager.producerStateManagerConfig))
-    val rlmConfig = RemoteLogManagerConfig.of(kafkaServer.config)
-    addBrokerReconfigurable(new DynamicRemoteLogConfig(kafkaServer, rlmConfig)) //todo check here, seems to update this instance when dynamic config is updated
+    addBrokerReconfigurable(new DynamicRemoteLogConfig(kafkaServer))
   }
 
   /**
@@ -1011,8 +1010,7 @@ class DynamicListenerConfig(server: KafkaBroker) extends BrokerReconfigurable wi
 
 }
 
-class DynamicRemoteLogConfig(server: KafkaBroker,
-                             rlmConfig: RemoteLogManagerConfig) extends BrokerReconfigurable with Logging {
+class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable with Logging {
   override def reconfigurableConfigs: Set[String] = {
     DynamicRemoteLogConfig.ReconfigurableConfigs
   }
@@ -1095,7 +1093,7 @@ class DynamicRemoteLogConfig(server: KafkaBroker,
       val oldFollowerThreadPoolSize = oldRLMConfig.remoteLogManagerFollowerThreadPoolSize()
       val oldReaderThreads = oldRLMConfig.remoteLogReaderThreads()
       
-      rlmConfig.update(newConfig)
+      RemoteLogManagerConfig.of(newConfig).update(newConfig)
       
       // Get new values after updating the singleton
       val newRLMConfig = newConfig.remoteLogManagerConfig
