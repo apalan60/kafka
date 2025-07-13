@@ -1093,7 +1093,7 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
       val oldFollowerThreadPoolSize = oldRLMConfig.remoteLogManagerFollowerThreadPoolSize()
       val oldReaderThreads = oldRLMConfig.remoteLogReaderThreads()
       
-      RemoteLogManagerConfig.of(newConfig).update(newConfig)
+//      RemoteLogManagerConfig.of(newConfig).update(newConfig)
       
       // Get new values after updating the singleton
       val newRLMConfig = newConfig.remoteLogManagerConfig
