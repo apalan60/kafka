@@ -41,8 +41,10 @@ public final class RemoteLogManagerConfig {
             if (existing == null) {
                 return new RemoteLogManagerConfig(config);
             }
-            existing.update(config);
-            return existing;
+            if (existing.configRef.get() != config) {
+                existing.update(config);
+            }
+            return existing; 
         });
     }
     
