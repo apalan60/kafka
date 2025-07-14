@@ -53,7 +53,7 @@ import org.apache.kafka.metadata.MetadataCache
 import org.apache.kafka.server.common.{DirectoryEventHandler, RequestLocal, StopPartition}
 import org.apache.kafka.server.log.remote.TopicPartitionLog
 import org.apache.kafka.server.config.ReplicationConfigs
-import org.apache.kafka.server.log.remote.storage.RemoteLogManager
+import org.apache.kafka.server.log.remote.storage.{RemoteLogManager, RemoteLogManagerConfig}
 import org.apache.kafka.server.metrics.KafkaMetricsGroup
 import org.apache.kafka.server.network.BrokerEndPoint
 import org.apache.kafka.server.purgatory.{DelayedDeleteRecords, DelayedOperationPurgatory, DelayedRemoteListOffsets, DeleteRecordsPartitionStatus, ListOffsetsPartitionStatus, TopicPartitionOperationKey}
@@ -1548,7 +1548,7 @@ class ReplicaManager(val config: KafkaConfig,
     }
 
     if (delayedRemoteListOffsetsRequired(statusByPartition)) {
-      val delayMs: Long = if (timeoutMs > 0) timeoutMs else config.remoteLogManagerConfig.remoteListOffsetsRequestTimeoutMs()
+      val delayMs: Long = if (timeoutMs > 0) timeoutMs else RemoteLogManagerConfig.of(config).remoteListOffsetsRequestTimeoutMs()
       // create delayed remote list offsets operation
       val delayedRemoteListOffsets = new DelayedRemoteListOffsets(delayMs, version, statusByPartition.asJava, tp => getPartitionOrException(tp), responseCallback)
       // create a list of (topic, partition) pairs to use as keys for this delayed remote list offsets operation
@@ -1602,7 +1602,7 @@ class ReplicaManager(val config: KafkaConfig,
         return Some(createLogReadResult(e))
     }
 
-    val remoteFetchMaxWaitMs = config.remoteLogManagerConfig.remoteFetchMaxWaitMs().toLong
+    val remoteFetchMaxWaitMs = RemoteLogManagerConfig.of(config).remoteFetchMaxWaitMs().toLong
     val remoteFetch = new DelayedRemoteFetch(remoteFetchTask, remoteFetchResult, remoteFetchInfo, remoteFetchMaxWaitMs,
       fetchPartitionStatus, params, logReadResults, this, responseCallback)
     delayedRemoteFetchPurgatory.tryCompleteElseWatch(remoteFetch, util.Collections.singletonList(key))

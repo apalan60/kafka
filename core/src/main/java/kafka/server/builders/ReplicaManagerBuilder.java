@@ -28,6 +28,7 @@ import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.metadata.MetadataCache;
 import org.apache.kafka.server.DelayedActionQueue;
 import org.apache.kafka.server.common.DirectoryEventHandler;
+import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig;
 import org.apache.kafka.server.util.Scheduler;
 import org.apache.kafka.storage.internals.log.LogDirFailureChannel;
 import org.apache.kafka.storage.log.metrics.BrokerTopicStats;
@@ -104,7 +105,7 @@ public class ReplicaManagerBuilder {
         if (metadataCache == null) throw new RuntimeException("You must set metadataCache");
         if (logDirFailureChannel == null) throw new RuntimeException("You must set logDirFailureChannel");
         if (alterPartitionManager == null) throw new RuntimeException("You must set alterIsrManager");
-        if (brokerTopicStats == null) brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig().isRemoteStorageSystemEnabled());
+        if (brokerTopicStats == null) brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled());
         // Initialize metrics in the end just before passing it to ReplicaManager to ensure ReplicaManager closes the
         // metrics correctly. There might be a resource leak if it is initialized and an exception occurs between
         // its initialization and creation of ReplicaManager.
