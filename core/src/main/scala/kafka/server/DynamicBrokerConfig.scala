@@ -716,8 +716,6 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
     logManager.reconfigureDefaultLogConfig(new LogConfig(newBrokerDefaults))
 
     updateLogsConfig(newBrokerDefaults.asScala)
-
-    RemoteLogManagerConfig.of(oldConfig).update(newConfig)
   }
 }
 
@@ -1088,21 +1086,17 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
           s"old value: $oldValue, new value: $newValue")
       }
 
-      // Capture old values before updating the singleton
       val oldRLMConfig = RemoteLogManagerConfig.of(oldConfig)
       val oldCopierThreadPoolSize = oldRLMConfig.remoteLogManagerCopierThreadPoolSize()
       val oldExpirationThreadPoolSize = oldRLMConfig.remoteLogManagerExpirationThreadPoolSize()
       val oldFollowerThreadPoolSize = oldRLMConfig.remoteLogManagerFollowerThreadPoolSize()
       val oldReaderThreads = oldRLMConfig.remoteLogReaderThreads()
-      
-      // Update the singleton with the new config
-      RemoteLogManagerConfig.of(oldConfig).update(newConfig)
-      
-      // Get new values directly from the updated singleton (since it's the same instance)
-      val newCopierThreadPoolSize = oldRLMConfig.remoteLogManagerCopierThreadPoolSize()
-      val newExpirationThreadPoolSize = oldRLMConfig.remoteLogManagerExpirationThreadPoolSize()
-      val newFollowerThreadPoolSize = oldRLMConfig.remoteLogManagerFollowerThreadPoolSize()
-      val newReaderThreads = oldRLMConfig.remoteLogReaderThreads()
+
+      val newRLMConfig = RemoteLogManagerConfig.of(newConfig)
+      val newCopierThreadPoolSize = newRLMConfig.remoteLogManagerCopierThreadPoolSize()
+      val newExpirationThreadPoolSize = newRLMConfig.remoteLogManagerExpirationThreadPoolSize()
+      val newFollowerThreadPoolSize = newRLMConfig.remoteLogManagerFollowerThreadPoolSize()
+      val newReaderThreads = newRLMConfig.remoteLogReaderThreads()
       
       if (newCopierThreadPoolSize != oldCopierThreadPoolSize)
         remoteLogManager.resizeCopierThreadPool(newCopierThreadPoolSize)
