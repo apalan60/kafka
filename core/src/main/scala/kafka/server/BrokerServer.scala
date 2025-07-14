@@ -199,7 +199,7 @@ class BrokerServer(
       kafkaScheduler.startup()
 
       /* register broker metrics */
-      brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled())
+      brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled)
 
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size)
 
