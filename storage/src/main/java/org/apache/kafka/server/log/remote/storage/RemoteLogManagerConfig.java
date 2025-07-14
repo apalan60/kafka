@@ -35,6 +35,12 @@ import static org.apache.kafka.common.config.ConfigDef.Type.STRING;
 
 public final class RemoteLogManagerConfig {
     private static final AtomicReference<RemoteLogManagerConfig> INSTANCE_REF = new AtomicReference<>();
+    
+    private final AtomicReference<AbstractConfig> configRef;
+
+    private RemoteLogManagerConfig(final AbstractConfig config) {
+        this.configRef = new AtomicReference<>(config);
+    }
 
     public static RemoteLogManagerConfig of(final AbstractConfig config) {
         return INSTANCE_REF.updateAndGet(existing -> {
@@ -44,17 +50,11 @@ public final class RemoteLogManagerConfig {
             if (existing.configRef.get() != config) {
                 existing.update(config);
             }
-            return existing; 
+            return existing;
         });
     }
     
-    private final AtomicReference<AbstractConfig> configRef;
-
-    private RemoteLogManagerConfig(final AbstractConfig config) {
-        this.configRef = new AtomicReference<>(config);
-    }
-
-    public void update(final AbstractConfig newConfig) {
+    void update(final AbstractConfig newConfig) {
         this.configRef.set(newConfig);
     }
     /**
