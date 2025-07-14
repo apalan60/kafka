@@ -715,7 +715,7 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
 
     logManager.reconfigureDefaultLogConfig(new LogConfig(newBrokerDefaults))
 
-    updateLogsConfig(newBrokerDefaults.asScala) //todo mabye we should hablde each reconfigurable for singlton update
+    updateLogsConfig(newBrokerDefaults.asScala) 
   }
 }
 
