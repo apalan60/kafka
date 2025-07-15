@@ -93,10 +93,9 @@ public class RemoteLogManagerConfigTest {
 
     @Test
     void testSingletonBehavior() {
-        Map<String, Object> props1 = Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L);
-        AbstractConfig config1 = new RLMTestConfig(props1);
-        RemoteLogManagerConfig rlmConfig1 = RemoteLogManagerConfig.of(config1);
-        RemoteLogManagerConfig rlmConfig2 = RemoteLogManagerConfig.of(config1);
+        var config = new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L));
+        var rlmConfig1 = RemoteLogManagerConfig.of(config);
+        var rlmConfig2 = RemoteLogManagerConfig.of(config);
         
         assertEquals(rlmConfig1, rlmConfig2);
         assertEquals(1024L, rlmConfig1.remoteLogIndexFileCacheTotalSizeBytes());
@@ -104,13 +103,10 @@ public class RemoteLogManagerConfigTest {
 
     @Test
     void testDynamicUpdate() {
-        RemoteLogManagerConfig rlmConfig = RemoteLogManagerConfig.of(
-                new RLMTestConfig(Map.<String, Object>of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L))
-        );
+        var rlmConfig = RemoteLogManagerConfig.of(new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L)));
         assertEquals(1024L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
 
-        rlmConfig.update(
-                new RLMTestConfig(Map.<String, Object>of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L)));
+        rlmConfig.update(new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L)));
         assertEquals(2048L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
     }
 
