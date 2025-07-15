@@ -35,7 +35,7 @@ import static org.apache.kafka.common.config.ConfigDef.Type.STRING;
 public final class RemoteLogManagerConfig {
     private static volatile RemoteLogManagerConfig instance;
     
-    private final AbstractConfig config;
+    private final AbstractConfig config; //todo find out why this is reference to latest config
 
     private RemoteLogManagerConfig(AbstractConfig config) {
         this.config = config;
