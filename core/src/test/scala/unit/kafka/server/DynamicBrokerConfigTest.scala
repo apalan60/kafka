@@ -728,6 +728,7 @@ class DynamicBrokerConfigTest {
     assertEquals(2150000000L, RemoteLogManagerConfig.of(config).logLocalRetentionMs)
   }
 
+  //TODO: The failed reason is because singleton RemoteLogManager would not be updated it internal config, so the test will pass if run it alone, but will fail if run with other tests.
   @Test
   def testDynamicLogLocalRetentionSizeConfig(): Unit = {
     val props = TestUtils.createBrokerConfig(0, port = 8181)
