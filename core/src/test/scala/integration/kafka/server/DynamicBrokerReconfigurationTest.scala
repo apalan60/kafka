@@ -82,6 +82,7 @@ object DynamicBrokerReconfigurationTest {
   val SecureExternal = "EXTERNAL"
 }
 
+//todo check these tests 
 class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup {
 
   import DynamicBrokerReconfigurationTest._
@@ -1065,6 +1066,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
       s"failed to remove DataPlaneAcceptor. current: ${acceptors.map(_.endPoint.toString).mkString(",")}")
   }
 
+  //todo: we can add a test like this to verify RemoteLogManagerConfig
   @ParameterizedTest(name = TestInfoUtils.TestWithParameterizedGroupProtocolNames)
   @MethodSource(Array("getTestGroupProtocolParametersAll"))
   def testTransactionVerificationEnable(groupProtocol: String): Unit = {
