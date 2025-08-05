@@ -154,13 +154,13 @@ class BrokerRegistrationRequestTest {
 
       // No features (MV) sent with registration, controller can't verify
       assertEquals(
-        Errors.BROKER_ID_NOT_REGISTERED,
-        registerBroker(channelManager, clusterId, 100, Some(1), None))
+        Errors.INVALID_REGISTRATION,
+        registerBroker(channelManager, clusterId, 100, None, None))
 
       // Given MV is too high for controller to support
       assertEquals(
-        Errors.BROKER_ID_NOT_REGISTERED,
-        registerBroker(channelManager, clusterId, 100, Some(1), Some((MetadataVersion.IBP_3_4_IV0.featureLevel, MetadataVersion.IBP_3_4_IV0.featureLevel))))
+        Errors.UNSUPPORTED_VERSION,
+        registerBroker(channelManager, clusterId, 100, None, Some((MetadataVersion.IBP_3_4_IV0.featureLevel, MetadataVersion.IBP_3_4_IV0.featureLevel))))
 
       // Controller supports this MV and isMigratingZkBroker is false, so this one works
       assertEquals(
