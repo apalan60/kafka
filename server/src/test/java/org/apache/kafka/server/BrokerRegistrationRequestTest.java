@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
-package kafka.server;
+package org.apache.kafka.server;
 
 import kafka.network.SocketServer;
+import kafka.server.ControllerInformation;
+import kafka.server.ControllerNodeProvider;
+import kafka.server.ControllerServer;
+import kafka.server.NodeToControllerChannelManagerImpl;
 
 import org.apache.kafka.clients.ClientResponse;
 import org.apache.kafka.common.Node;
@@ -142,37 +146,62 @@ public class BrokerRegistrationRequestTest {
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
-    public void testRegisterZkWith33Controller(ClusterInstance clusterInstance) throws Exception {
-        // Verify that a controller running an old metadata.version cannot register a ZK broker
+    public void shouldRejectZkMigratingBrokerWhenFeatureLevelDoesNotSupportMigration(ClusterInstance clusterInstance) throws Exception {
         var clusterId = clusterInstance.clusterId();
         var channelManager = brokerToControllerChannelManager(clusterInstance);
         try {
             channelManager.start();
-            // Invalid registration (isMigratingZkBroker, but MV does not support migrations)
             Assertions.assertEquals(
                 Errors.BROKER_ID_NOT_REGISTERED,
                 registerBroker(channelManager, clusterId, 100, 1L, 
-                    new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersionTestUtils.IBP_3_3_IV3_FEATURE_LEVEL))
+                    new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersion.IBP_3_3_IV3.featureLevel()))
             );
+        } finally {
+            channelManager.shutdown();
+        }
+    }
 
-            // No features (MV) sent with registration, controller can't verify
+    @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
+    public void shouldRejectRegistrationWithoutFeatureLevels(ClusterInstance clusterInstance) throws Exception {
+        var clusterId = clusterInstance.clusterId();
+        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        try {
+            channelManager.start();
             Assertions.assertEquals(
                 Errors.INVALID_REGISTRATION,
                 registerBroker(channelManager, clusterId, 100, null, null)
             );
+        } finally {
+            channelManager.shutdown();
+        }
+    }
 
-            // Given MV is too high for controller to support
+    @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
+    public void shouldRejectRegistrationWhenFeatureLevelTooHigh(ClusterInstance clusterInstance) throws Exception {
+        var clusterId = clusterInstance.clusterId();
+        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        try {
+            channelManager.start();
             Assertions.assertEquals(
                 Errors.UNSUPPORTED_VERSION,
-                registerBroker(channelManager, clusterId, 100, null, 
-                    new FeatureLevel(MetadataVersionTestUtils.IBP_3_4_IV0_FEATURE_LEVEL, MetadataVersionTestUtils.IBP_3_4_IV0_FEATURE_LEVEL))
+                registerBroker(channelManager, clusterId, 100, null,
+                    new FeatureLevel(MetadataVersion.IBP_3_4_IV0.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
             );
+        } finally {
+            channelManager.shutdown();
+        }
+    }
 
-            // Controller supports this MV and isMigratingZkBroker is false, so this one works
+    @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
+    public void shouldRegisterWhenSupportedRangeAndNotMigrating(ClusterInstance clusterInstance) throws Exception {
+        var clusterId = clusterInstance.clusterId();
+        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        try {
+            channelManager.start();
             Assertions.assertEquals(
                 Errors.NONE,
                 registerBroker(channelManager, clusterId, 100, null, 
-                    new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV3_FEATURE_LEVEL, MetadataVersionTestUtils.IBP_3_4_IV0_FEATURE_LEVEL))
+                    new FeatureLevel(MetadataVersion.IBP_3_3_IV3.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
             );
         } finally {
             channelManager.shutdown();

@@ -22,6 +22,4 @@ public class MetadataVersionTestUtils {
     public static final short IBP_3_0_IV1_FEATURE_LEVEL = 1;
     public static final short IBP_3_3_IV0_FEATURE_LEVEL = 4;
     public static final short IBP_3_3_IV2_FEATURE_LEVEL = 6;
-    public static final short IBP_3_3_IV3_FEATURE_LEVEL = 7;
-    public static final short IBP_3_4_IV0_FEATURE_LEVEL = 8;
 }
