@@ -44,7 +44,6 @@ import org.apache.kafka.server.common.MetadataVersionTestUtils;
 import org.apache.kafka.server.common.NodeToControllerChannelManager;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.List;
@@ -54,6 +53,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import scala.Option;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This test simulates a broker registering with the KRaft quorum under different configurations.
@@ -172,7 +173,7 @@ class BrokerRegistrationRequestTest {
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectZkMigratingBrokerWhenFeatureLevelDoesNotSupportMigration() throws Exception {
-        Assertions.assertEquals(
+        assertEquals(
             Errors.BROKER_ID_NOT_REGISTERED,
             registerBroker(channelManager, clusterInstance.clusterId(), 100, 1L, 
                 new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersion.IBP_3_3_IV3.featureLevel()))
@@ -181,7 +182,7 @@ class BrokerRegistrationRequestTest {
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectRegistrationWithoutFeatureLevels() throws Exception {
-        Assertions.assertEquals(
+        assertEquals(
             Errors.INVALID_REGISTRATION,
             registerBroker(channelManager, clusterInstance.clusterId(), 100, null, null)
         );
@@ -189,7 +190,7 @@ class BrokerRegistrationRequestTest {
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectRegistrationWhenFeatureLevelTooHigh() throws Exception {
-        Assertions.assertEquals(
+        assertEquals(
             Errors.UNSUPPORTED_VERSION,
             registerBroker(channelManager, clusterInstance.clusterId(), 100, null,
                 new FeatureLevel(MetadataVersion.IBP_3_4_IV0.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
@@ -198,7 +199,7 @@ class BrokerRegistrationRequestTest {
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRegisterWhenSupportedRangeAndNotMigrating() throws Exception {
-        Assertions.assertEquals(
+        assertEquals(
             Errors.NONE,
             registerBroker(channelManager, clusterInstance.clusterId(), 100, null, 
                 new FeatureLevel(MetadataVersion.IBP_3_3_IV3.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
