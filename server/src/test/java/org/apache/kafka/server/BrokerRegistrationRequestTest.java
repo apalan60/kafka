@@ -68,7 +68,10 @@ class BrokerRegistrationRequestTest {
             assertEquals(
                     Errors.BROKER_ID_NOT_REGISTERED, 
                     registerBroker(env.channelManager, clusterInstance.clusterId(), 1L, 
-                            new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersion.IBP_3_3_IV3.featureLevel()))
+                            new BrokerRegistrationRequestData.Feature()
+                                    .setName(MetadataVersion.FEATURE_NAME)
+                                    .setMinSupportedVersion(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL)
+                                    .setMaxSupportedVersion(MetadataVersion.IBP_3_3_IV3.featureLevel()))
             );
         }
     }
@@ -89,7 +92,10 @@ class BrokerRegistrationRequestTest {
             assertEquals(
                     Errors.UNSUPPORTED_VERSION,
                     registerBroker(env.channelManager, clusterInstance.clusterId(), null,
-                            new FeatureLevel(MetadataVersion.IBP_3_4_IV0.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
+                            new BrokerRegistrationRequestData.Feature()
+                                    .setName(MetadataVersion.FEATURE_NAME)
+                                    .setMinSupportedVersion(MetadataVersion.IBP_3_4_IV0.featureLevel())
+                                    .setMaxSupportedVersion(MetadataVersion.IBP_3_4_IV0.featureLevel()))
             );
         }
     }
@@ -100,7 +106,10 @@ class BrokerRegistrationRequestTest {
             assertEquals(
                     Errors.NONE,
                     registerBroker(env.channelManager, clusterInstance.clusterId(), null,
-                            new FeatureLevel(MetadataVersion.IBP_3_3_IV3.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
+                            new BrokerRegistrationRequestData.Feature()
+                                    .setName(MetadataVersion.FEATURE_NAME)
+                                    .setMinSupportedVersion(MetadataVersion.IBP_3_3_IV3.featureLevel())
+                                    .setMaxSupportedVersion(MetadataVersion.IBP_3_4_IV0.featureLevel()))
             );
         }
     }
@@ -167,16 +176,12 @@ class BrokerRegistrationRequestTest {
             NodeToControllerChannelManager channelManager,
             String clusterId,
             Long zkEpoch,
-            FeatureLevel featureLevelToSend
+            BrokerRegistrationRequestData.Feature featureLevelToSend
     ) throws Exception {
         var features = new BrokerRegistrationRequestData.FeatureCollection();
 
         if (featureLevelToSend != null) {
-            features.add(new BrokerRegistrationRequestData.Feature()
-                    .setName(MetadataVersion.FEATURE_NAME)
-                    .setMinSupportedVersion(featureLevelToSend.min())
-                    .setMaxSupportedVersion(featureLevelToSend.max())
-            );
+            features.add(featureLevelToSend);
         }
 
         Feature.PRODUCTION_FEATURES.stream()
@@ -207,8 +212,6 @@ class BrokerRegistrationRequestTest {
         );
         return Errors.forCode(resp.data().errorCode());
     }
-
-    record FeatureLevel(short min, short max) { }
 
     record TestControllerNodeProvider(ClusterInstance clusterInstance)
             implements ControllerNodeProvider {
