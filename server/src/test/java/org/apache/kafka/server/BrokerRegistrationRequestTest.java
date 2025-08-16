@@ -43,9 +43,6 @@ import org.apache.kafka.server.common.MetadataVersion;
 import org.apache.kafka.server.common.MetadataVersionTestUtils;
 import org.apache.kafka.server.common.NodeToControllerChannelManager;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -61,29 +58,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class BrokerRegistrationRequestTest {
 
-    private Metrics metrics;
-    private NodeToControllerChannelManager channelManager;
-    private final ClusterInstance clusterInstance;
-    
-    public BrokerRegistrationRequestTest(ClusterInstance clusterInstance) {
-        this.clusterInstance = clusterInstance;
-    }
+    private final class ChannelEnv implements AutoCloseable {
+        final Metrics metrics;
+        final NodeToControllerChannelManager channelManager;
 
-    @BeforeEach
-    void setUp() {
-        metrics = new Metrics();
-        channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
-        channelManager.start();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (channelManager != null) {
-            channelManager.shutdown();
+        ChannelEnv(ClusterInstance clusterInstance) {
+            this.metrics = new Metrics();
+            this.channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
+            this.channelManager.start();
         }
-        if (metrics != null) {
+
+        @Override
+        public void close() {
+            channelManager.shutdown();
             metrics.close();
         }
+    }
+
+    private ChannelEnv openChannel(ClusterInstance clusterInstance) {
+        return new ChannelEnv(clusterInstance);
     }
 
     public NodeToControllerChannelManager brokerToControllerChannelManager(ClusterInstance clusterInstance, Metrics metrics) {
@@ -172,38 +165,46 @@ class BrokerRegistrationRequestTest {
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
-    public void shouldRejectZkMigratingBrokerWhenFeatureLevelDoesNotSupportMigration() throws Exception {
-        assertEquals(
-            Errors.BROKER_ID_NOT_REGISTERED,
-            registerBroker(channelManager, clusterInstance.clusterId(), 100, 1L, 
-                new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersion.IBP_3_3_IV3.featureLevel()))
-        );
+    public void shouldRejectZkMigratingBrokerWhenFeatureLevelDoesNotSupportMigration(ClusterInstance clusterInstance) throws Exception {
+        try (ChannelEnv env = openChannel(clusterInstance)) {
+            assertEquals(
+                    Errors.BROKER_ID_NOT_REGISTERED,
+                    registerBroker(env.channelManager, clusterInstance.clusterId(), 100, 1L,
+                            new FeatureLevel(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL, MetadataVersion.IBP_3_3_IV3.featureLevel()))
+            );
+        }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
-    public void shouldRejectRegistrationWithoutFeatureLevels() throws Exception {
-        assertEquals(
-            Errors.INVALID_REGISTRATION,
-            registerBroker(channelManager, clusterInstance.clusterId(), 100, null, null)
-        );
+    public void shouldRejectRegistrationWithoutFeatureLevels(ClusterInstance clusterInstance) throws Exception {
+        try (ChannelEnv env = openChannel(clusterInstance)) {
+            assertEquals(
+                    Errors.INVALID_REGISTRATION,
+                    registerBroker(env.channelManager, clusterInstance.clusterId(), 100, null, null)
+            );
+        }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
-    public void shouldRejectRegistrationWhenFeatureLevelTooHigh() throws Exception {
-        assertEquals(
-            Errors.UNSUPPORTED_VERSION,
-            registerBroker(channelManager, clusterInstance.clusterId(), 100, null,
-                new FeatureLevel(MetadataVersion.IBP_3_4_IV0.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
-        );
+    public void shouldRejectRegistrationWhenFeatureLevelTooHigh(ClusterInstance clusterInstance) throws Exception {
+        try (ChannelEnv env = openChannel(clusterInstance)) {
+            assertEquals(
+                    Errors.UNSUPPORTED_VERSION,
+                    registerBroker(env.channelManager, clusterInstance.clusterId(), 100, null,
+                            new FeatureLevel(MetadataVersion.IBP_3_4_IV0.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
+            );
+        }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
-    public void shouldRegisterWhenSupportedRangeAndNotMigrating() throws Exception {
-        assertEquals(
-            Errors.NONE,
-            registerBroker(channelManager, clusterInstance.clusterId(), 100, null, 
-                new FeatureLevel(MetadataVersion.IBP_3_3_IV3.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
-        );
+    public void shouldRegisterWhenSupportedRangeAndNotMigrating(ClusterInstance clusterInstance) throws Exception {
+        try (ChannelEnv env = openChannel(clusterInstance)) {
+            assertEquals(
+                    Errors.NONE,
+                    registerBroker(env.channelManager, clusterInstance.clusterId(), 100, null,
+                            new FeatureLevel(MetadataVersion.IBP_3_3_IV3.featureLevel(), MetadataVersion.IBP_3_4_IV0.featureLevel()))
+            );
+        }
     }
 
     public record FeatureLevel(short min, short max) { }
