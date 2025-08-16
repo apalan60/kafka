@@ -17,7 +17,6 @@
 
 package org.apache.kafka.server;
 
-import kafka.network.SocketServer;
 import kafka.server.ControllerInformation;
 import kafka.server.ControllerNodeProvider;
 import kafka.server.ControllerServer;
@@ -60,16 +59,16 @@ import scala.Option;
  */
 public class BrokerRegistrationRequestTest {
 
-    public NodeToControllerChannelManager brokerToControllerChannelManager(ClusterInstance clusterInstance) {
+    public NodeToControllerChannelManager brokerToControllerChannelManager(ClusterInstance clusterInstance, Metrics metrics) {
         var controllerSocketServer = clusterInstance.controllers().values().stream()
             .map(ControllerServer::socketServer)
             .findFirst()
             .orElseThrow();
 
         return new NodeToControllerChannelManagerImpl(
-                new TestControllerNodeProvider(controllerSocketServer, clusterInstance),
+                new TestControllerNodeProvider(clusterInstance),
                 Time.SYSTEM,
-                new Metrics(),
+                metrics,
                 controllerSocketServer.config(),
                 "heartbeat",
                 "test-heartbeat-",
@@ -148,7 +147,8 @@ public class BrokerRegistrationRequestTest {
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectZkMigratingBrokerWhenFeatureLevelDoesNotSupportMigration(ClusterInstance clusterInstance) throws Exception {
         var clusterId = clusterInstance.clusterId();
-        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        var metrics = new Metrics();
+        var channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
         try {
             channelManager.start();
             Assertions.assertEquals(
@@ -158,13 +158,15 @@ public class BrokerRegistrationRequestTest {
             );
         } finally {
             channelManager.shutdown();
+            metrics.close();
         }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectRegistrationWithoutFeatureLevels(ClusterInstance clusterInstance) throws Exception {
         var clusterId = clusterInstance.clusterId();
-        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        var metrics = new Metrics();
+        var channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
         try {
             channelManager.start();
             Assertions.assertEquals(
@@ -173,13 +175,15 @@ public class BrokerRegistrationRequestTest {
             );
         } finally {
             channelManager.shutdown();
+            metrics.close();
         }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRejectRegistrationWhenFeatureLevelTooHigh(ClusterInstance clusterInstance) throws Exception {
         var clusterId = clusterInstance.clusterId();
-        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        var metrics = new Metrics();
+        var channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
         try {
             channelManager.start();
             Assertions.assertEquals(
@@ -189,13 +193,15 @@ public class BrokerRegistrationRequestTest {
             );
         } finally {
             channelManager.shutdown();
+            metrics.close();
         }
     }
 
     @ClusterTest(types = {Type.KRAFT}, controllers = 1, metadataVersion = MetadataVersion.IBP_3_3_IV3)
     public void shouldRegisterWhenSupportedRangeAndNotMigrating(ClusterInstance clusterInstance) throws Exception {
         var clusterId = clusterInstance.clusterId();
-        var channelManager = brokerToControllerChannelManager(clusterInstance);
+        var metrics = new Metrics();
+        var channelManager = brokerToControllerChannelManager(clusterInstance, metrics);
         try {
             channelManager.start();
             Assertions.assertEquals(
@@ -205,22 +211,23 @@ public class BrokerRegistrationRequestTest {
             );
         } finally {
             channelManager.shutdown();
+            metrics.close();
         }
     }
 
     public record FeatureLevel(short min, short max) { }
 
-    private record TestControllerNodeProvider(SocketServer controllerSocketServer, ClusterInstance clusterInstance)
+    private record TestControllerNodeProvider(ClusterInstance clusterInstance)
             implements ControllerNodeProvider {
 
         public Optional<Node> node() {
             return Optional.of(new Node(
-                    controllerSocketServer.config().nodeId(),
+                    clusterInstance.controllers().keySet().iterator().next(),
                     "127.0.0.1",
-                    controllerSocketServer.boundPort(clusterInstance.controllerListenerName())
+                    clusterInstance.controllerBoundPorts().get(0)
             ));
         }
-
+        
         public ListenerName listenerName() {
             return clusterInstance.controllerListenerName();
         }
