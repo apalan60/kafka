@@ -67,7 +67,7 @@ class BrokerRegistrationRequestTest {
         try (ChannelEnv env = openChannel()) {
             assertEquals(
                     Errors.BROKER_ID_NOT_REGISTERED, 
-                    registerBroker(env.channelManager, clusterInstance.clusterId(), 1L, 
+                    registerBroker(env.channelManager, 1L, 
                             new BrokerRegistrationRequestData.Feature()
                                     .setName(MetadataVersion.FEATURE_NAME)
                                     .setMinSupportedVersion(MetadataVersionTestUtils.IBP_3_3_IV0_FEATURE_LEVEL)
@@ -81,7 +81,7 @@ class BrokerRegistrationRequestTest {
         try (ChannelEnv env = openChannel()) {
             assertEquals(
                     Errors.INVALID_REGISTRATION,
-                    registerBroker(env.channelManager, clusterInstance.clusterId(), null, null)
+                    registerBroker(env.channelManager, null, null)
             );
         }
     }
@@ -91,7 +91,7 @@ class BrokerRegistrationRequestTest {
         try (ChannelEnv env = openChannel()) {
             assertEquals(
                     Errors.UNSUPPORTED_VERSION,
-                    registerBroker(env.channelManager, clusterInstance.clusterId(), null,
+                    registerBroker(env.channelManager, null,
                             new BrokerRegistrationRequestData.Feature()
                                     .setName(MetadataVersion.FEATURE_NAME)
                                     .setMinSupportedVersion(MetadataVersion.IBP_3_4_IV0.featureLevel())
@@ -105,7 +105,7 @@ class BrokerRegistrationRequestTest {
         try (ChannelEnv env = openChannel()) {
             assertEquals(
                     Errors.NONE,
-                    registerBroker(env.channelManager, clusterInstance.clusterId(), null,
+                    registerBroker(env.channelManager, null, 
                             new BrokerRegistrationRequestData.Feature()
                                     .setName(MetadataVersion.FEATURE_NAME)
                                     .setMinSupportedVersion(MetadataVersion.IBP_3_3_IV3.featureLevel())
@@ -174,7 +174,6 @@ class BrokerRegistrationRequestTest {
 
     Errors registerBroker(
             NodeToControllerChannelManager channelManager,
-            String clusterId,
             Long zkEpoch,
             BrokerRegistrationRequestData.Feature featureLevelToSend
     ) throws Exception {
@@ -200,7 +199,7 @@ class BrokerRegistrationRequestTest {
         var req = new BrokerRegistrationRequestData()
                 .setBrokerId(100)
                 .setLogDirs(List.of(Uuid.randomUuid()))
-                .setClusterId(clusterId)
+                .setClusterId(clusterInstance.clusterId())
                 .setIncarnationId(Uuid.randomUuid())
                 .setIsMigratingZkBroker(zkEpoch != null)
                 .setFeatures(features)
