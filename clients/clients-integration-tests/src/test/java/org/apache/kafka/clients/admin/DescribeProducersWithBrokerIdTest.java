@@ -61,6 +61,30 @@ class DescribeProducersWithBrokerIdTest {
         clusterInstance.createTopic(TOPIC_NAME, NUM_PARTITIONS, REPLICATION_FACTOR);
     }
 
+    private List<Integer> getReplicaBrokerIds(Admin admin, TopicPartition topicPartition) throws Exception {
+        var topicDescription = admin.describeTopics(List.of(topicPartition.topic())).allTopicNames().get().get(topicPartition.topic());
+        return topicDescription.partitions().get(topicPartition.partition()).replicas().stream()
+            .map(Node::id)
+            .toList();
+    }
+    
+    private int getNonReplicaBrokerId(Admin admin, TopicPartition topicPartition) throws Exception {
+        var replicaBrokerIds = getReplicaBrokerIds(admin, topicPartition);
+        return clusterInstance.brokerIds().stream()
+            .filter(id -> !replicaBrokerIds.contains(id))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No non-replica broker found"));
+    }
+    
+    private int getFollowerBrokerId(Admin admin, TopicPartition topicPartition) throws Exception {
+        var replicaBrokerIds = getReplicaBrokerIds(admin, topicPartition);
+        var leaderBrokerId = clusterInstance.getLeaderBrokerId(topicPartition);
+        return replicaBrokerIds.stream()
+            .filter(id -> id != leaderBrokerId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No follower found for partition " + topicPartition));
+    }
+
     @ClusterTest
     void testDescribeProducersDefaultRoutesToLeader() throws Exception {
         try (Producer<byte[], byte[]> producer = clusterInstance.producer();
@@ -88,20 +112,9 @@ class DescribeProducersWithBrokerIdTest {
              var admin = clusterInstance.admin()) {
             sendTestRecords(producer);
 
-            var topicDescription = admin.describeTopics(List.of(topicPartition.topic())).allTopicNames().get().get(topicPartition.topic());
-            var replicaBrokerIds = topicDescription.partitions().get(topicPartition.partition()).replicas().stream()
-                .map(Node::id)
-                .toList();
-
-            var leaderBrokerId = clusterInstance.getLeaderBrokerId(topicPartition);
-            var followerBrokerId = replicaBrokerIds.stream()
-                .filter(id -> id != leaderBrokerId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No follower found for partition " + topicPartition));
-            
             var followerState = admin.describeProducers(
                 List.of(topicPartition), 
-                new DescribeProducersOptions().brokerId(followerBrokerId)
+                new DescribeProducersOptions().brokerId(getFollowerBrokerId(admin, topicPartition))
             ).partitionResult(topicPartition).get();
             
             var leaderState = admin.describeProducers(
@@ -120,23 +133,10 @@ class DescribeProducersWithBrokerIdTest {
              var admin = clusterInstance.admin()) {
             sendTestRecords(producer);
 
-            var topicDescription = admin.describeTopics(
-                List.of(topicPartition.topic())
-            ).allTopicNames().get().get(topicPartition.topic());
-            
-            var replicaBrokerIds = topicDescription.partitions().get(topicPartition.partition()).replicas().stream()
-                .map(Node::id)
-                .toList();
-
-            var nonReplicaBrokerId = clusterInstance.brokerIds().stream()
-                .filter(id -> !replicaBrokerIds.contains(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No non-replica broker found"));
-            
             TestUtils.assertFutureThrows(NotLeaderOrFollowerException.class, 
                 admin.describeProducers(
                     List.of(topicPartition), 
-                    new DescribeProducersOptions().brokerId(nonReplicaBrokerId)
+                    new DescribeProducersOptions().brokerId(getNonReplicaBrokerId(admin, topicPartition))
                 ).partitionResult(topicPartition)); 
         }
     }
