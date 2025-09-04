@@ -40,6 +40,7 @@ import org.apache.kafka.server.ApiVersionManager;
 import org.apache.kafka.server.ClientMetricsManager;
 import org.apache.kafka.server.DelegationTokenManager;
 import org.apache.kafka.server.authorizer.Authorizer;
+import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig;
 import org.apache.kafka.storage.log.metrics.BrokerTopicStats;
 
 import java.util.Map;
@@ -211,7 +212,7 @@ public class KafkaApisBuilder {
         if (fetchManager == null) throw new RuntimeException("You must set fetchManager");
         if (sharePartitionManager == null) throw new RuntimeException("You must set sharePartitionManager");
         if (clientMetricsManager == null) throw new RuntimeException("You must set clientMetricsManager");
-        if (brokerTopicStats == null) brokerTopicStats = new BrokerTopicStats(config.remoteLogManagerConfig().isRemoteStorageSystemEnabled());
+        if (brokerTopicStats == null) brokerTopicStats = new BrokerTopicStats(RemoteLogManagerConfig.of(config).isRemoteStorageSystemEnabled());
         if (apiVersionManager == null) throw new RuntimeException("You must set apiVersionManager");
         if (groupConfigManager == null) throw new RuntimeException("You must set groupConfigManager");
 

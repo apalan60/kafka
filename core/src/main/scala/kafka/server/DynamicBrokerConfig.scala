@@ -664,7 +664,7 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
 
     def validateLogLocalRetentionMs(): Unit = {
       val logRetentionMs = newConfig.logRetentionTimeMillis
-      val logLocalRetentionMs: java.lang.Long = newConfig.remoteLogManagerConfig.logLocalRetentionMs
+      val logLocalRetentionMs: java.lang.Long = RemoteLogManagerConfig.of(newConfig).logLocalRetentionMs
       if (logRetentionMs != -1L && logLocalRetentionMs != -2L) {
         if (logLocalRetentionMs == -1L) {
           throw new ConfigException(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_MS_PROP, logLocalRetentionMs,
@@ -679,7 +679,7 @@ class DynamicLogConfig(logManager: LogManager) extends BrokerReconfigurable with
 
     def validateLogLocalRetentionBytes(): Unit = {
       val logRetentionBytes = newConfig.logRetentionBytes
-      val logLocalRetentionBytes: java.lang.Long = newConfig.remoteLogManagerConfig.logLocalRetentionBytes
+      val logLocalRetentionBytes: java.lang.Long = RemoteLogManagerConfig.of(newConfig).logLocalRetentionBytes
       if (logRetentionBytes > -1 && logLocalRetentionBytes != -2) {
         if (logLocalRetentionBytes == -1) {
           throw new ConfigException(RemoteLogManagerConfig.LOG_LOCAL_RETENTION_BYTES_PROP, logLocalRetentionBytes,
@@ -1039,7 +1039,7 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
           // but `remote.log.manager.follower.thread.pool.size` is set dynamically.
           // This can be removed once `remote.log.manager.thread.pool.size` is removed.
           if (RemoteLogManagerConfig.REMOTE_LOG_MANAGER_FOLLOWER_THREAD_POOL_SIZE_PROP.equals(k))
-            server.config.remoteLogManagerConfig.remoteLogManagerFollowerThreadPoolSize()
+            RemoteLogManagerConfig.of(server.config).remoteLogManagerFollowerThreadPoolSize()
           else
             server.config.getInt(k)
         }
@@ -1086,19 +1086,17 @@ class DynamicRemoteLogConfig(server: KafkaBroker) extends BrokerReconfigurable w
           s"old value: $oldValue, new value: $newValue")
       }
 
-      val newRLMConfig = newConfig.remoteLogManagerConfig
-      val oldRLMConfig = oldConfig.remoteLogManagerConfig
-      if (newRLMConfig.remoteLogManagerCopierThreadPoolSize() != oldRLMConfig.remoteLogManagerCopierThreadPoolSize())
-        remoteLogManager.resizeCopierThreadPool(newRLMConfig.remoteLogManagerCopierThreadPoolSize())
+      if (RemoteLogManagerConfig.of(newConfig).remoteLogManagerCopierThreadPoolSize() != RemoteLogManagerConfig.of(oldConfig).remoteLogManagerCopierThreadPoolSize())
+        remoteLogManager.resizeCopierThreadPool(RemoteLogManagerConfig.of(newConfig).remoteLogManagerCopierThreadPoolSize())
 
-      if (newRLMConfig.remoteLogManagerExpirationThreadPoolSize() != oldRLMConfig.remoteLogManagerExpirationThreadPoolSize())
-        remoteLogManager.resizeExpirationThreadPool(newRLMConfig.remoteLogManagerExpirationThreadPoolSize())
+      if (RemoteLogManagerConfig.of(newConfig).remoteLogManagerExpirationThreadPoolSize() != RemoteLogManagerConfig.of(oldConfig).remoteLogManagerExpirationThreadPoolSize())
+        remoteLogManager.resizeExpirationThreadPool(RemoteLogManagerConfig.of(newConfig).remoteLogManagerExpirationThreadPoolSize())
 
-      if (newRLMConfig.remoteLogManagerFollowerThreadPoolSize() != oldRLMConfig.remoteLogManagerFollowerThreadPoolSize())
-        remoteLogManager.resizeFollowerThreadPool(newRLMConfig.remoteLogManagerFollowerThreadPoolSize())
+      if (RemoteLogManagerConfig.of(newConfig).remoteLogManagerFollowerThreadPoolSize() != RemoteLogManagerConfig.of(oldConfig).remoteLogManagerFollowerThreadPoolSize())
+        remoteLogManager.resizeFollowerThreadPool(RemoteLogManagerConfig.of(newConfig).remoteLogManagerFollowerThreadPoolSize())
 
-      if (newRLMConfig.remoteLogReaderThreads() != oldRLMConfig.remoteLogReaderThreads())
-        remoteLogManager.resizeReaderThreadPool(newRLMConfig.remoteLogReaderThreads())
+      if (RemoteLogManagerConfig.of(newConfig).remoteLogReaderThreads() != RemoteLogManagerConfig.of(oldConfig).remoteLogReaderThreads())
+        remoteLogManager.resizeReaderThreadPool(RemoteLogManagerConfig.of(newConfig).remoteLogReaderThreads())
     }
   }
 

@@ -2228,7 +2228,7 @@ class UnifiedLogTest {
   def testFetchOffsetByTimestampFromRemoteStorage(): Unit = {
     val config: KafkaConfig = createKafkaConfigWithRLM
     val purgatory = new DelayedOperationPurgatory[DelayedRemoteListOffsets]("RemoteListOffsets", config.brokerId)
-    val remoteLogManager = spy(new RemoteLogManager(config.remoteLogManagerConfig,
+    val remoteLogManager = spy(new RemoteLogManager(RemoteLogManagerConfig.of(config),
       0,
       logDir.getAbsolutePath,
       "clusterId",
@@ -2326,7 +2326,7 @@ class UnifiedLogTest {
   def testFetchLatestTieredTimestampWithRemoteStorage(): Unit = {
     val config: KafkaConfig = createKafkaConfigWithRLM
     val purgatory = new DelayedOperationPurgatory[DelayedRemoteListOffsets]("RemoteListOffsets", config.brokerId)
-    val remoteLogManager = spy(new RemoteLogManager(config.remoteLogManagerConfig,
+    val remoteLogManager = spy(new RemoteLogManager(RemoteLogManagerConfig.of(config),
       0,
       logDir.getAbsolutePath,
       "clusterId",

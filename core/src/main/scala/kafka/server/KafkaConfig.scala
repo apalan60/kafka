@@ -188,9 +188,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   def valuesFromThisConfigWithPrefixOverride(prefix: String): util.Map[String, AnyRef] =
     super.valuesWithPrefixOverride(prefix)
 
-  private val _remoteLogManagerConfig = new RemoteLogManagerConfig(this)
-  def remoteLogManagerConfig = _remoteLogManagerConfig
-
   private val _quorumConfig = new QuorumConfig(this)
   def quorumConfig: QuorumConfig = _quorumConfig
 
@@ -697,8 +694,8 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
     logProps.put(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, logMessageTimestampType.name)
     logProps.put(TopicConfig.MESSAGE_TIMESTAMP_BEFORE_MAX_MS_CONFIG, logMessageTimestampBeforeMaxMs: java.lang.Long)
     logProps.put(TopicConfig.MESSAGE_TIMESTAMP_AFTER_MAX_MS_CONFIG, logMessageTimestampAfterMaxMs: java.lang.Long)
-    logProps.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, remoteLogManagerConfig.logLocalRetentionMs: java.lang.Long)
-    logProps.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, remoteLogManagerConfig.logLocalRetentionBytes: java.lang.Long)
+    logProps.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, RemoteLogManagerConfig.of(this).logLocalRetentionMs: java.lang.Long)
+    logProps.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, RemoteLogManagerConfig.of(this).logLocalRetentionBytes: java.lang.Long)
     logProps
   }
 }

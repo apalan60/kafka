@@ -274,7 +274,7 @@ class LogConfigTest {
     props.put(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG, localRetentionMs.toString)
     props.put(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG, localRetentionBytes.toString)
     assertThrows(classOf[ConfigException],
-      () => LogConfig.validate(util.Map.of, props, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+      () => LogConfig.validate(util.Map.of, props, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
   }
 
   @Test
@@ -284,7 +284,7 @@ class LogConfigTest {
     val kafkaConfig = KafkaConfig.fromProps(kafkaProps)
     val logProps = new Properties()
     def validateCleanupPolicy(): Unit = {
-      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     }
     logProps.put(TopicConfig.CLEANUP_POLICY_CONFIG, TopicConfig.CLEANUP_POLICY_DELETE)
     logProps.put(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true")
@@ -311,10 +311,10 @@ class LogConfigTest {
     val logProps = new Properties()
     logProps.put(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true")
     if (sysRemoteStorageEnabled) {
-      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     } else {
       val message = assertThrows(classOf[ConfigException],
-        () => LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+        () => LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
       assertTrue(message.getMessage.contains("Tiered Storage functionality is disabled in the broker"))
     }
   }
@@ -331,7 +331,7 @@ class LogConfigTest {
     if (wasRemoteStorageEnabled) {
       val message = assertThrows(classOf[InvalidConfigurationException],
         () => LogConfig.validate(util.Map.of(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"),
-          logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+          logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
       assertTrue(message.getMessage.contains("It is invalid to disable remote storage without deleting remote data. " +
         "If you want to keep the remote data and turn to read only, please set `remote.storage.enable=true,remote.log.copy.disable=true`. " +
         "If you want to disable remote storage and delete all remote data, please set `remote.storage.enable=false,remote.log.delete.on.disable=true`."))
@@ -340,11 +340,11 @@ class LogConfigTest {
       // It should be able to disable the remote log storage when delete on disable is set to true
       logProps.put(TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, "true")
       LogConfig.validate(util.Map.of(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "true"),
-        logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+        logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     } else {
-      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+      LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
       LogConfig.validate(util.Map.of(TopicConfig.REMOTE_LOG_STORAGE_ENABLE_CONFIG, "false"), logProps,
-        kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+        kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     }
   }
 
@@ -364,11 +364,11 @@ class LogConfigTest {
     if (sysRemoteStorageEnabled) {
       val message = assertThrows(classOf[ConfigException],
         () => LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap,
-          kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+          RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
       assertTrue(message.getMessage.contains(TopicConfig.LOCAL_LOG_RETENTION_MS_CONFIG))
     } else {
       LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap,
-        kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+        RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     }
   }
 
@@ -388,11 +388,11 @@ class LogConfigTest {
     if (sysRemoteStorageEnabled) {
       val message = assertThrows(classOf[ConfigException],
         () => LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap,
-          kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+          RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
       assertTrue(message.getMessage.contains(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG))
     } else {
       LogConfig.validate(util.Map.of, logProps, kafkaConfig.extractLogConfigMap,
-        kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+        RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     }
   }
 
@@ -407,10 +407,10 @@ class LogConfigTest {
 
     if (sysRemoteStorageEnabled) {
       val message = assertThrows(classOf[ConfigException],
-        () => LogConfig.validateBrokerLogConfigValues(kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled))
+        () => LogConfig.validateBrokerLogConfigValues(kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled))
       assertTrue(message.getMessage.contains(TopicConfig.LOCAL_LOG_RETENTION_BYTES_CONFIG))
     } else {
-      LogConfig.validateBrokerLogConfigValues(kafkaConfig.extractLogConfigMap, kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled)
+      LogConfig.validateBrokerLogConfigValues(kafkaConfig.extractLogConfigMap, RemoteLogManagerConfig.of(kafkaConfig).isRemoteStorageSystemEnabled)
     }
   }
 

@@ -91,6 +91,27 @@ public class RemoteLogManagerConfigTest {
         assertEquals(2, rlmConfig.remoteLogManagerFollowerThreadPoolSize());
     }
 
+    @Test
+    void testSingletonBehavior() {
+        var config = new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L));
+        var rlmConfig1 = RemoteLogManagerConfig.of(config);
+        var rlmConfig2 = RemoteLogManagerConfig.of(config);
+        
+        assertEquals(rlmConfig1, rlmConfig2);
+        assertEquals(1024L, rlmConfig1.remoteLogIndexFileCacheTotalSizeBytes());
+    }
+    
+//todo update test
+//
+//    @Test
+//    void testDynamicUpdate() {
+//        var rlmConfig = RemoteLogManagerConfig.of(new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 1024L)));
+//        assertEquals(1024L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
+//
+//        rlmConfig.update(new RLMTestConfig(Map.of(RemoteLogManagerConfig.REMOTE_LOG_INDEX_FILE_CACHE_TOTAL_SIZE_BYTES_PROP, 2048L)));
+//        assertEquals(2048L, rlmConfig.remoteLogIndexFileCacheTotalSizeBytes());
+//    }
+
     private Map<String, Object> getRLMProps(String rsmPrefix, String rlmmPrefix) {
         Map<String, Object> props = new HashMap<>();
         props.put(RemoteLogManagerConfig.REMOTE_LOG_STORAGE_SYSTEM_ENABLE_PROP, true);
@@ -140,7 +161,7 @@ public class RemoteLogManagerConfigTest {
 
         public RLMTestConfig(Map<?, ?> originals) {
             super(RemoteLogManagerConfig.configDef(), originals, true);
-            rlmConfig = new RemoteLogManagerConfig(this);
+            rlmConfig = RemoteLogManagerConfig.of(this);
         }
 
         public RemoteLogManagerConfig remoteLogManagerConfig() {
