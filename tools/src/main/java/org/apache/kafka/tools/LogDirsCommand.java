@@ -25,11 +25,13 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.utils.Exit;
 import org.apache.kafka.common.utils.Utils;
-import org.apache.kafka.server.util.CommandDefaultOptions;
-import org.apache.kafka.server.util.CommandLineUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,8 +44,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import joptsimple.OptionSpec;
-import joptsimple.OptionSpecBuilder;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class LogDirsCommand {
 
@@ -156,67 +157,65 @@ public class LogDirsCommand {
     }
 
     // Visible for testing
-    static class LogDirsCommandOptions extends CommandDefaultOptions {
-        private final OptionSpec<String> bootstrapServerOpt;
-        private final OptionSpec<String> commandConfigOpt;
-        private final OptionSpecBuilder describeOpt;
-        private final OptionSpec<String> topicListOpt;
-        private final OptionSpec<String> brokerListOpt;
+    static class LogDirsCommandOptions {
+        private final Namespace namespace;
 
         public LogDirsCommandOptions(String... args) {
-            super(args);
+            ArgumentParser parser = ArgumentParsers.newArgumentParser("kafka-log-dirs")
+                    .defaultHelp(true)
+                    .description("This tool helps to query log directory usage on the specified brokers.");
 
-            bootstrapServerOpt = parser.accepts("bootstrap-server", "REQUIRED: the server(s) to use for bootstrapping")
-                    .withRequiredArg()
-                    .describedAs("The server(s) to use for bootstrapping")
-                    .ofType(String.class);
-            commandConfigOpt = parser.accepts("command-config", "Property file containing configs to be passed to Admin Client.")
-                    .withRequiredArg()
-                    .describedAs("Admin client property file")
-                    .ofType(String.class);
-            describeOpt = parser.accepts("describe", "Describe the specified log directories on the specified brokers.");
-            topicListOpt = parser.accepts("topic-list", "The list of topics to be queried in the form \"topic1,topic2,topic3\". " +
-                            "All topics will be queried if no topic list is specified")
-                    .withRequiredArg()
-                    .describedAs("Topic list")
-                    .defaultsTo("")
-                    .ofType(String.class);
-            brokerListOpt = parser.accepts("broker-list", "The list of brokers to be queried in the form \"0,1,2\". " +
-                            "All brokers in the cluster will be queried if no broker list is specified")
-                    .withRequiredArg()
-                    .describedAs("Broker list")
-                    .ofType(String.class)
-                    .defaultsTo("");
+            parser.addArgument("--bootstrap-server")
+                    .required(true)
+                    .help("REQUIRED: the server(s) to use for bootstrapping")
+                    .metavar("The server(s) to use for bootstrapping");
 
-            options = parser.parse(args);
+            parser.addArgument("--command-config")
+                    .help("Property file containing configs to be passed to Admin Client.")
+                    .metavar("Admin client property file");
 
-            CommandLineUtils.maybePrintHelpOrVersion(this, "This tool helps to query log directory usage on the specified brokers.");
+            parser.addArgument("--describe")
+                    .action(storeTrue())
+                    .required(true)
+                    .help("Describe the specified log directories on the specified brokers.");
 
-            CommandLineUtils.checkRequiredArgs(parser, options, bootstrapServerOpt, describeOpt);
+            parser.addArgument("--topic-list")
+                    .setDefault("")
+                    .help("The list of topics to be queried in the form \"topic1,topic2,topic3\". " +
+                          "All topics will be queried if no topic list is specified")
+                    .metavar("Topic list");
+
+            parser.addArgument("--broker-list")
+                    .setDefault("")
+                    .help("The list of brokers to be queried in the form \"0,1,2\". " +
+                          "All brokers in the cluster will be queried if no broker list is specified")
+                    .metavar("Broker list");
+
+            this.namespace = parser.parseArgsOrFail(args);
         }
 
-        private Stream<String> splitAtCommasAndFilterOutEmpty(OptionSpec<String> option) {
-            return Arrays.stream(options.valueOf(option).split(",")).filter(x -> !x.isEmpty());
+        private Stream<String> splitAtCommasAndFilterOutEmpty(String value) {
+            return Arrays.stream(value.split(",")).filter(x -> !x.isEmpty());
         }
 
         private String bootstrapServers() {
-            return options.valueOf(bootstrapServerOpt);
+            return namespace.getString("bootstrap_server");
         }
 
         private boolean hasCommandConfig() {
-            return options.has(commandConfigOpt);
+            return namespace.getString("command_config") != null;
         }
 
         private String commandConfig() {
-            return options.valueOf(commandConfigOpt);
+            return namespace.getString("command_config");
         }
 
         private Set<String> topics() {
-            return splitAtCommasAndFilterOutEmpty(topicListOpt).collect(Collectors.toSet());
+            return splitAtCommasAndFilterOutEmpty(namespace.getString("topic_list")).collect(Collectors.toSet());
         }
 
         private Set<Integer> brokers() {
-            return splitAtCommasAndFilterOutEmpty(brokerListOpt).map(Integer::valueOf).collect(Collectors.toSet());
+            return splitAtCommasAndFilterOutEmpty(namespace.getString("broker_list")).map(Integer::valueOf).collect(Collectors.toSet());
         }
     }
 }
