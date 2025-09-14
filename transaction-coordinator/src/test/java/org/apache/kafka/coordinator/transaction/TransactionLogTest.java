@@ -35,18 +35,20 @@ import org.apache.kafka.coordinator.transaction.generated.TransactionLogKey;
 import org.apache.kafka.coordinator.transaction.generated.TransactionLogValue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.wrap;
 import static org.apache.kafka.common.protocol.types.Field.TaggedFieldsSection;
+import static org.apache.kafka.server.common.TransactionVersion.LATEST_PRODUCTION;
 import static org.apache.kafka.server.common.TransactionVersion.TV_0;
 import static org.apache.kafka.server.common.TransactionVersion.TV_2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,9 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 class TransactionLogTest {
 
-    private final short producerEpoch = 0;
-    private final int transactionTimeoutMs = 1000;
-
     private final Set<TopicPartition> topicPartitions = Set.of(
         new TopicPartition("topic1", 0),
         new TopicPartition("topic1", 1),
@@ -67,81 +66,82 @@ class TransactionLogTest {
         new TopicPartition("topic2", 2)
     );
 
+    private sealed interface TxnKeyResult {
+        record UnknownVersion(short version) implements TxnKeyResult { }
+        record TransactionalId(String id) implements TxnKeyResult { }
+    }
+
+    private static TxnKeyResult readTxnRecordKey(ByteBuffer buf) {
+        var e = TransactionLog.readTxnRecordKey(buf);
+        return e.isLeft()
+            ? new TxnKeyResult.UnknownVersion((Short) e.left().get())
+            : new TxnKeyResult.TransactionalId(e.right().get());
+    }
+
+    private static TransactionMetadata TransactionMetadata(TransactionState state) {
+        return new TransactionMetadata(
+            "transactionalId",
+            0L,
+            RecordBatch.NO_PRODUCER_ID,
+            RecordBatch.NO_PRODUCER_ID,
+            (short) 0,
+            RecordBatch.NO_PRODUCER_EPOCH,
+            1000,
+            state,
+            Set.of(),
+            0,
+            0,
+            LATEST_PRODUCTION
+        );
+    }
+
+    private static Stream<TransactionState> transactionStatesProvider() {
+        return Stream.of(
+            TransactionState.EMPTY,
+            TransactionState.ONGOING,
+            TransactionState.PREPARE_COMMIT,
+            TransactionState.COMPLETE_COMMIT,
+            TransactionState.PREPARE_ABORT,
+            TransactionState.COMPLETE_ABORT
+        );
+    }
+
     @Test
     void shouldThrowExceptionWriteInvalidTxn() {
-        var transactionalId = "transactionalId";
-        var producerId = 23423L;
-
-        var txnMetadata = new TransactionMetadata(transactionalId, producerId, RecordBatch.NO_PRODUCER_ID, RecordBatch.NO_PRODUCER_ID, producerEpoch,
-            RecordBatch.NO_PRODUCER_EPOCH, transactionTimeoutMs, TransactionState.EMPTY, Set.of(), 0, 0, TV_0);
+        var txnMetadata = TransactionMetadata(TransactionState.EMPTY);
         txnMetadata.addPartitions(topicPartitions);
 
         var preparedMetadata = txnMetadata.prepareNoTransit();
         assertThrows(IllegalStateException.class, () -> TransactionLog.valueToBytes(preparedMetadata, TV_2));
     }
 
-    @Test
-    void shouldReadWriteMessages() {
-        var pidMappings = Map.of(
-            "zero", 0L,
-            "one", 1L,
-            "two", 2L,
-            "three", 3L,
-            "four", 4L,
-            "five", 5L
-        );
-
-        var transactionStates = Map.of(
-            0L, TransactionState.EMPTY,
-            1L, TransactionState.ONGOING,
-            2L, TransactionState.PREPARE_COMMIT,
-            3L, TransactionState.COMPLETE_COMMIT,
-            4L, TransactionState.PREPARE_ABORT,
-            5L, TransactionState.COMPLETE_ABORT
-        );
-
-        // generate transaction log messages
-        List<SimpleRecord> txnRecords = new ArrayList<>();
-        for (var entry : pidMappings.entrySet()) {
-
-            var txnMetadata = new TransactionMetadata(entry.getKey(), entry.getValue(), RecordBatch.NO_PRODUCER_ID, RecordBatch.NO_PRODUCER_ID, producerEpoch,
-                RecordBatch.NO_PRODUCER_EPOCH, transactionTimeoutMs, transactionStates.get(entry.getValue()), Set.of(), 0, 0, TV_0);
-
-            if (!txnMetadata.state().equals(TransactionState.EMPTY)) {
-                txnMetadata.addPartitions(topicPartitions);
-            }
-
-            var keyBytes = TransactionLog.keyToBytes(entry.getKey());
-            var valueBytes = TransactionLog.valueToBytes(txnMetadata.prepareNoTransit(), TV_2);
-
-            txnRecords.add(new SimpleRecord(keyBytes, valueBytes));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("transactionStatesProvider")
+    void shouldReadWriteMessages(TransactionState state) {
+        var txnMetadata = TransactionMetadata(state);
+        if (state != TransactionState.EMPTY) {
+            txnMetadata.addPartitions(topicPartitions);
         }
 
-        var records = MemoryRecords.withRecords(0, Compression.NONE, txnRecords.toArray(new SimpleRecord[0]));
+        var record = MemoryRecords.withRecords(Compression.NONE, new SimpleRecord(
+            TransactionLog.keyToBytes(txnMetadata.transactionalId()),
+            TransactionLog.valueToBytes(txnMetadata.prepareNoTransit(), TV_2)
+        )).records().iterator().next();
+        var txnIdResult = assertInstanceOf(TxnKeyResult.TransactionalId.class, readTxnRecordKey(record.key()));
+        var deserialized = TransactionLog.readTxnRecordValue(txnIdResult.id(), record.value()).get();
 
-        var count = 0;
-        for (var record : records.records()) {
-            var keyResult = readTxnRecordKey(record.key());
-            var txnIdResult = assertInstanceOf(TxnKeyResult.TransactionalId.class, keyResult);
-            var txnMetadata = TransactionLog.readTxnRecordValue(txnIdResult.id(), record.value()).get();
+        assertEquals(txnMetadata.producerId(), deserialized.producerId());
+        assertEquals(txnMetadata.producerEpoch(), deserialized.producerEpoch());
+        assertEquals(txnMetadata.txnTimeoutMs(), deserialized.txnTimeoutMs());
+        assertEquals(txnMetadata.state(), deserialized.state());
 
-            assertEquals(pidMappings.get(txnIdResult.id()), txnMetadata.producerId());
-            assertEquals(producerEpoch, txnMetadata.producerEpoch());
-            assertEquals(transactionTimeoutMs, txnMetadata.txnTimeoutMs());
-            assertEquals(transactionStates.get(txnMetadata.producerId()), txnMetadata.state());
-
-            if (txnMetadata.state().equals(TransactionState.EMPTY)) {
-                assertEquals(Set.of(), txnMetadata.topicPartitions());
-            } else {
-                assertEquals(topicPartitions, txnMetadata.topicPartitions());
-            }
-
-            count++;
+        if (txnMetadata.state() == TransactionState.EMPTY) {
+            assertEquals(Set.of(), deserialized.topicPartitions());
+        } else {
+            assertEquals(topicPartitions, deserialized.topicPartitions());
         }
-
-        assertEquals(pidMappings.size(), count);
     }
-
+  
     @Test
     void testSerializeTransactionLogValueToHighestNonFlexibleVersion() {
         var txnTransitMetadata = new TxnTransitMetadata(1L, 1L, 1L, (short) 1, (short) 1, 1000, TransactionState.COMPLETE_COMMIT, new HashSet<>(), 500L, 500L, TV_0);
@@ -239,9 +239,8 @@ class TransactionLogTest {
         transactionLogValue.set("_tagged_fields", txnLogValueTaggedFields);
 
         // Prepare the buffer.
-        var buffer = allocate(transactionLogValue.sizeOf() + 2);
-        buffer.put((byte) 0);
-        buffer.put((byte) 1); // Add 1 as version.
+        var buffer = allocate(Short.BYTES + transactionLogValue.sizeOf());
+        buffer.putShort((short) 1); // Add 1 as version.
         transactionLogValue.writeTo(buffer);
         buffer.flip();
 
@@ -276,19 +275,7 @@ class TransactionLogTest {
         var uv = assertInstanceOf(TxnKeyResult.UnknownVersion.class, result);
         assertEquals(Short.MAX_VALUE, uv.version());
     }
-
-    private sealed interface TxnKeyResult {
-        record UnknownVersion(short version) implements TxnKeyResult { }
-        record TransactionalId(String id) implements TxnKeyResult { }
-    }
-
-    private static TxnKeyResult readTxnRecordKey(ByteBuffer buf) {
-        var e = TransactionLog.readTxnRecordKey(buf); 
-        return e.isLeft()
-            ? new TxnKeyResult.UnknownVersion((Short) e.left().get())
-            : new TxnKeyResult.TransactionalId(e.right().get());
-    }  
-    
+   
     @Test
     void shouldReturnEmptyWhenForTombstoneRecord() {
         assertTrue(TransactionLog.readTxnRecordValue("transaction-id", null).isEmpty());
