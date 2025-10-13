@@ -138,8 +138,7 @@ ext {
       options.compilerArgs << "-Werror"
       if (userKeepAliveMode == KeepAliveMode.SESSION){
         // Suppress warning triggered under keepAliveMode=SESSION during joint compilation
-        //   Unexpected javac output: warning: [path] bad path element ".../core/build/classes/java/main": no such file or directory
-        // This becomes an error under -Werror
+        // Unexpected javac output: warning: [path] bad path element ".../core/build/classes/java/main": no such file or directory
         options.compilerArgs << "-Xlint:-path"
       }
     }
