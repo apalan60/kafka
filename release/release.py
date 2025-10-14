@@ -134,7 +134,7 @@ def command_stage_docs():
     # version due to already having bumped the bugfix version number.
     gradle_version_override = detect_docs_release_version(project_version)
 
-    cmd("Building docs", f"./gradlew -Pversion={gradle_version_override} clean siteDocsTar aggregatedJavadoc", cwd=repo_dir, env=jdk25_env)
+    cmd("Building docs", f"./gradlew -Pversion={gradle_version_override} clean siteDocsTar aggregatedJavadoc --no-parallel", cwd=repo_dir, env=jdk25_env)
 
     docs_tar = os.path.join(repo_dir, "core", "build", "distributions", f"kafka_2.13-{gradle_version_override}-site-docs.tgz")
 
@@ -330,7 +330,7 @@ except Exception as e:
 git.targz(rc_tag, f"kafka-{release_version}-src/", f"{artifacts_dir}/kafka-{release_version}-src.tgz")
 cmd("Building artifacts", "./gradlew clean && ./gradlew releaseTarGz -PscalaVersion=2.13", cwd=kafka_dir, env=jdk25_env, shell=True)
 cmd("Copying artifacts", f"cp {kafka_dir}/core/build/distributions/* {artifacts_dir}", shell=True)
-cmd("Building docs", "./gradlew clean aggregatedJavadoc", cwd=kafka_dir, env=jdk25_env)
+cmd("Building docs", "./gradlew clean aggregatedJavadoc --no-parallel", cwd=kafka_dir, env=jdk25_env)
 cmd("Copying docs", f"cp -R {kafka_dir}/build/docs/javadoc {artifacts_dir}")
 
 for filename in os.listdir(artifacts_dir):
