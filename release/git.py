@@ -20,6 +20,7 @@ Auxiliary function to interact with git.
 """
 
 import os
+import subprocess
 
 from runtime import repo_dir, execute, cmd
 
@@ -33,12 +34,22 @@ def __defaults(kwargs):
 
 def has_staged_changes(**kwargs):
     __defaults(kwargs)
-    execute("git diff --cached --exit-code --quiet", **kwargs)
+    try:
+        # 0: no staged changes; non-zero: there are staged changes
+        execute("git diff --cached --exit-code --quiet", **kwargs)
+        return False
+    except subprocess.CalledProcessError:
+        return True 
 
 
 def has_unstaged_changes(**kwargs):
     __defaults(kwargs)
-    execute("git diff --exit-code --quiet", **kwargs)
+    try:
+        # 0: no unstaged changes; non-zero: there are unstaged changes
+        execute("git diff --exit-code --quiet", **kwargs)
+        return False
+    except subprocess.CalledProcessError:
+        return True 
 
 
 def fetch_tags(remote=push_remote_name, **kwargs):
