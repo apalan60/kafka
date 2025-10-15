@@ -134,7 +134,10 @@ def command_stage_docs():
     # version due to already having bumped the bugfix version number.
     gradle_version_override = detect_docs_release_version(project_version)
 
-    cmd("Building docs", f"./gradlew -Pversion={gradle_version_override} clean siteDocsTar aggregatedJavadoc --no-parallel", cwd=repo_dir, env=jdk25_env)
+    cmd("Building docs",f"./gradlew -Pversion={gradle_version_override} clean siteDocsTar", cwd=repo_dir, env=jdk25_env,)
+    # Disable parallel execution for aggregatedJavadoc due to Gradle 9 issues
+    cmd("Building docs", f"./gradlew -Pversion={gradle_version_override} aggregatedJavadoc --no-parallel", cwd=repo_dir, env=jdk25_env,)
+
 
     docs_tar = os.path.join(repo_dir, "core", "build", "distributions", f"kafka_2.13-{gradle_version_override}-site-docs.tgz")
 
