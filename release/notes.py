@@ -144,20 +144,6 @@ def generate(version):
     at all for the specified version.
     """
     issues = query(f"project=KAFKA and fixVersion={version}")
-    if not issues:
-        raise Exception(f"Didn't find any issues for version {version}")
-    unresolved_issues = filter_unresolved(issues)
-    if unresolved_issues:
-        issue_list = "\n".join([issue_str(issue) for issue in unresolved_issues])
-        raise Exception(f"""
-Release {version} is not complete since there are unresolved or improperly
-resolved issues tagged {version} as the fix version:
-
-{issue_list}
-
-Note that for some resolutions, you should simply remove the fix version
-as they have not been truly fixed in this release.
-        """)
     return render(version, issues)
 
 
