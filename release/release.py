@@ -252,7 +252,7 @@ def verify_prerequisites():
     return True
 
 
-verify_prerequisites()
+preferences.once(f"verify_prerequisites", verify_prerequisites)
 
 # Validate that the release doesn't already exist
 git.fetch_tags()
