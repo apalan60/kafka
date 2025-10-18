@@ -248,8 +248,8 @@ def verify_prerequisites():
             fail(f"Pre-requisite not met: {name}. Error: {e}")
     prereq('Apache Maven CLI (mvn) in PATH', lambda: "Apache Maven" in execute("mvn -v"))
     prereq("svn CLI in PATH", lambda: "svn" in execute("svn --version"))
-    prereq("Verifying that you have no unstaged git changes", lambda: not git.has_unstaged_changes())
-    prereq("Verifying that you have no staged git changes", lambda: not git.has_staged_changes())
+    prereq("Verifying that you have no unstaged git changes", lambda: git.ensure_no_unstaged_changes())
+    prereq("Verifying that you have no staged git changes", lambda: git.ensure_no_staged_changes())
     return True
 
 
