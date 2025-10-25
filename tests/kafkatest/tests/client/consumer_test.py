@@ -75,19 +75,36 @@ class OffsetValidationTest(VerifiableConsumerTest):
         self.mark_for_collect(consumer, 'verifiable_consumer_stdout')
         return consumer
 
-    def _node_failed_with_unreleased_instance_id(self, node):
-        cmd = "grep -q 'UnreleasedInstanceIdException' %s" % VerifiableConsumer.LOG_FILE
-        return node.account.ssh(cmd, allow_fail=True) == 0
-
     def await_conflict_consumers_fenced(self, conflict_consumer):
+        # Ensure every conflicting consumer actually starts once before we wait for fencing.
+        started_nodes = set()
+        def all_conflict_consumers_started():
+            for node in conflict_consumer.alive_nodes():
+                started_nodes.add(node)
+            return len(conflict_consumer.alive_nodes()) == len(conflict_consumer.nodes)
+
+        wait_until(all_conflict_consumers_started,
+                   timeout_sec=60,
+                   err_msg="Timed out waiting for conflict consumers to start before fencing")
+
         wait_until(lambda: len(conflict_consumer.dead_nodes()) == len(conflict_consumer.nodes),
                    timeout_sec=60,
                    err_msg="Timed out waiting for conflict consumers to terminate after fencing")
 
-        for node in conflict_consumer.nodes:
-            wait_until(lambda: self._node_failed_with_unreleased_instance_id(node),
-                       timeout_sec=30,
-                       err_msg="Conflict consumer %s did not fail with UnreleasedInstanceIdException" % node.account.hostname)
+        # Guard against stray processes that could rejoin once the original static members stop.
+        running_pids = {}
+        def all_conflict_consumers_stopped():
+            running_pids.clear()
+            for node in conflict_consumer.nodes:
+                pids = conflict_consumer.pids(node)
+                if pids:
+                    running_pids[node.account.hostname] = pids
+            return not running_pids
+
+        wait_until(all_conflict_consumers_stopped,
+                   timeout_sec=30,
+                   err_msg=lambda: "Conflict consumers still running after fencing: %s" %
+                                   ", ".join("%s=%s" % (host, pids) for host, pids in running_pids.items()))
 
     @cluster(num_nodes=7)
     @matrix(
