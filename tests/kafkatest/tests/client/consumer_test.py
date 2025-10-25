@@ -18,6 +18,7 @@ from ducktape.utils.util import wait_until
 from ducktape.mark.resource import cluster
 
 from kafkatest.tests.verifiable_consumer_test import VerifiableConsumerTest
+from kafkatest.services.verifiable_consumer import VerifiableConsumer
 from kafkatest.services.kafka import TopicPartition, quorum, consumer_group
 
 import signal
@@ -73,6 +74,20 @@ class OffsetValidationTest(VerifiableConsumerTest):
         consumer = super(OffsetValidationTest, self).setup_consumer(topic, **kwargs)
         self.mark_for_collect(consumer, 'verifiable_consumer_stdout')
         return consumer
+
+    def _node_failed_with_unreleased_instance_id(self, node):
+        cmd = "grep -q 'UnreleasedInstanceIdException' %s" % VerifiableConsumer.LOG_FILE
+        return node.account.ssh(cmd, allow_fail=True) == 0
+
+    def await_conflict_consumers_fenced(self, conflict_consumer):
+        wait_until(lambda: len(conflict_consumer.dead_nodes()) == len(conflict_consumer.nodes),
+                   timeout_sec=60,
+                   err_msg="Timed out waiting for conflict consumers to terminate after fencing")
+
+        for node in conflict_consumer.nodes:
+            wait_until(lambda: self._node_failed_with_unreleased_instance_id(node),
+                       timeout_sec=30,
+                       err_msg="Conflict consumer %s did not fail with UnreleasedInstanceIdException" % node.account.hostname)
 
     @cluster(num_nodes=7)
     @matrix(
@@ -326,7 +341,10 @@ class OffsetValidationTest(VerifiableConsumerTest):
                 assert num_rebalances == consumer.num_rebalances(), "Static consumers attempt to join with instance id in use should not cause a rebalance"
                 assert len(consumer.joined_nodes()) == len(consumer.nodes)
                 assert len(conflict_consumer.joined_nodes()) == 0
-                
+
+                # ensure the conflict consumers terminate
+                self.await_conflict_consumers_fenced(conflict_consumer)
+
                 # Stop existing nodes, so conflicting ones should be able to join.
                 consumer.stop_all()
                 wait_until(lambda: len(consumer.dead_nodes()) == len(consumer.nodes),
