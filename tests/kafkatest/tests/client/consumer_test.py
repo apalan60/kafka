@@ -336,7 +336,8 @@ class OffsetValidationTest(VerifiableConsumerTest):
                 assert len(consumer.joined_nodes()) == len(consumer.nodes)
                 assert len(conflict_consumer.joined_nodes()) == 0
 
-                # ensure the conflict consumers terminate
+                # Conflict consumers will terminate due to a fatal UnreleasedInstanceIdException error.
+                # Wait for termination to complete to prevent conflict consumers from immediately re-joining the group while existing nodes are shutting down.
                 self.await_conflict_consumers_fenced(conflict_consumer)
 
                 # Stop existing nodes, so conflicting ones should be able to join.
