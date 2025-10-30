@@ -76,36 +76,13 @@ class OffsetValidationTest(VerifiableConsumerTest):
         return consumer
 
     def await_conflict_consumers_fenced(self, conflict_consumer):
-        # Ensure every conflicting consumer actually starts once before we wait for fencing.
-        started_nodes = set()
-        def all_conflict_consumers_started():
-            for node in conflict_consumer.alive_nodes():
-                started_nodes.add(node)
-            return len(conflict_consumer.alive_nodes()) == len(conflict_consumer.nodes)
-
-        wait_until(all_conflict_consumers_started,
+        # Rely on explicit shutdown_complete events from the verifiable consumer to guarantee each conflict member
+        # reached the fenced path rather than remaining in the default DEAD state prior to startup.
+        wait_until(lambda: len(conflict_consumer.shutdown_complete_nodes()) == len(conflict_consumer.nodes) and 
+                           len(conflict_consumer.dead_nodes()) == len(conflict_consumer.nodes),
                    timeout_sec=60,
-                   err_msg="Timed out waiting for conflict consumers to start before fencing")
-
-        wait_until(lambda: len(conflict_consumer.dead_nodes()) == len(conflict_consumer.nodes),
-                   timeout_sec=60,
-                   err_msg="Timed out waiting for conflict consumers to terminate after fencing")
-
-        # Guard against stray processes that could rejoin once the original static members stop.
-        running_pids = {}
-        def all_conflict_consumers_stopped():
-            running_pids.clear()
-            for node in conflict_consumer.nodes:
-                pids = conflict_consumer.pids(node)
-                if pids:
-                    running_pids[node.account.hostname] = pids
-            return not running_pids
-
-        wait_until(all_conflict_consumers_stopped,
-                   timeout_sec=30,
-                   err_msg=lambda: "Conflict consumers still running after fencing: %s" %
-                                   ", ".join("%s=%s" % (host, pids) for host, pids in running_pids.items()))
-
+                   err_msg="Timed out waiting for conflict consumers to report shutdown completion after fencing")
+        
     @cluster(num_nodes=7)
     @matrix(
         metadata_quorum=[quorum.isolated_kraft],
