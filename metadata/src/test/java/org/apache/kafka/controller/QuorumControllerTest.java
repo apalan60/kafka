@@ -137,6 +137,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1401,6 +1402,38 @@ public class QuorumControllerTest {
                 () -> checker.accept(new ConfigResource(TOPIC, "bar")));
 
             testToImages(clientEnv.allRecords());
+        }
+    }
+
+    @Test
+    public void testDynamicQuorumPerControllerConfigsAreRejected() throws Throwable {
+        AtomicInteger nodeIdCounter = new AtomicInteger(0);
+        try (
+            MockRaftClientTestEnv clientEnv = new MockRaftClientTestEnv.Builder(1).
+                setLastKRaftVersion(KRaftVersion.KRAFT_VERSION_1).
+                build();
+            QuorumControllerTestEnv controlEnv = new QuorumControllerTestEnv.Builder(clientEnv).
+                setControllerBuilderInitializer(builder ->
+                    builder.setQuorumFeatures(new QuorumFeatures(
+                        nodeIdCounter.getAndIncrement(),
+                        QuorumFeatures.defaultSupportedFeatureMap(true),
+                        List.of()))).
+                build()
+        ) {
+            QuorumController active = controlEnv.activeController();
+            ConfigResource controllerResource = new ConfigResource(BROKER, "1");
+
+            Map<ConfigResource, ApiError> response = active.incrementalAlterConfigs(
+                ANONYMOUS_CONTEXT,
+                Map.of(controllerResource, Map.of(
+                    TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, entry(SET, "1"))),
+                false
+            ).get();
+
+            ApiError error = response.get(controllerResource);
+            assertEquals(Errors.BROKER_ID_NOT_REGISTERED, error.error());
+            assertTrue(error.message().contains("dynamic voters"),
+                "Unexpected error message: " + error);
         }
     }
 

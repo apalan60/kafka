@@ -481,8 +481,12 @@ public final class QuorumController implements Controller {
                     }
                     if (!(clusterControl.brokerRegistrations().containsKey(nodeId) ||
                             featureControl.isControllerId(nodeId))) {
-                        throw new BrokerIdNotRegisteredException("No node with id " +
-                            nodeId + " found.");
+                        String message = dynamicControllerQuorum ?
+                            ("Per-controller dynamic configs are currently not supported on dynamic-voter KRaft " +
+                                "clusters (requested id: " + nodeId + "). To change the configuration for an " +
+                                "individual controller, update its configuration file and restart that controller.") :
+                            ("No node with id " + nodeId + " found.");
+                        throw new BrokerIdNotRegisteredException(message);
                     }
                     break;
                 case TOPIC:
@@ -1386,6 +1390,11 @@ public final class QuorumController implements Controller {
     private final FeatureControlManager featureControl;
 
     /**
+     * True when the controller quorum uses dynamic voters rather than a static voter list.
+     */
+    private final boolean dynamicControllerQuorum;
+
+    /**
      * An object which stores the controller's view of the latest producer ID
      * that has been generated. This must be accessed only by the event queue thread.
      */
@@ -1498,6 +1507,7 @@ public final class QuorumController implements Controller {
         this.snapshotRegistry = new SnapshotRegistry(logContext);
         this.deferredEventQueue = new DeferredEventQueue(logContext);
         this.resourceExists = new ConfigResourceExistenceChecker();
+        this.dynamicControllerQuorum = quorumFeatures.quorumNodeIds().isEmpty();
         this.clientQuotaControlManager = new ClientQuotaControlManager.Builder().
             setLogContext(logContext).
             setSnapshotRegistry(snapshotRegistry).
